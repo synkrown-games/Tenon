@@ -1,0 +1,1412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1">
+<title>Tenon: HTML/JS structure editor</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/foldgutter.min.css">
+<style>
+*{box-sizing:border-box}[hidden]{display:none!important}
+:root{--bg:#0d1117;--p:#141a23;--l:#222b38;--t:#d5dce8;--d:#7a8799;--a:#f5b544;--b:#7cc4ff;--hh:44px}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--t);font:14px system-ui,sans-serif;overflow:hidden}
+#app{height:100%;display:flex;flex-direction:column;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+button{background:none;border:0;color:var(--t);min-width:36px;height:34px;border-radius:8px;font:inherit;cursor:pointer;padding:0 8px}
+button:hover{background:#1e2733}button:focus-visible,input:focus-visible{outline:2px solid var(--a)}
+header{height:var(--hh);display:flex;align-items:center;gap:2px;padding:0 6px;background:var(--p);border-bottom:1px solid var(--l);flex:none}
+#ttl{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;cursor:pointer;padding:0 8px}
+#ttl small{color:var(--d);font-weight:400}
+#bRun{color:var(--a)}
+#mid{flex:1;display:flex;min-height:0;position:relative}
+aside{width:300px;flex:none;background:var(--p);border-right:1px solid var(--l);display:flex;flex-direction:column;min-height:0}
+#tabs{display:flex;overflow-x:auto;border-bottom:1px solid var(--l);flex:none}
+#tabs button{flex:1 0 auto;border-radius:0;height:38px;color:var(--d)}#tabs .on{color:var(--a);box-shadow:inset 0 -2px var(--a)}
+.pn{display:none;flex:1;overflow:auto;padding:6px;min-height:0}.pn.on{display:block}
+.pn input[type=text]{width:100%;background:var(--bg);border:1px solid var(--l);color:var(--t);border-radius:8px;padding:8px 10px;font:16px ui-monospace,monospace;margin-bottom:6px}
+.opts{display:flex;gap:10px;margin-bottom:6px;color:var(--d);font-size:12px;flex-wrap:wrap}.opts label{display:flex;gap:4px;align-items:center}
+.bar{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px}.bar button{background:#1b2431;font-size:12px}
+.r{display:flex;align-items:center;gap:6px;min-height:32px;padding:0 2px;border-radius:6px;cursor:pointer}.r:hover{background:#1b2431}
+.tg{width:20px;text-align:center;color:var(--d);font-style:normal;align-self:stretch;display:flex;align-items:center;justify-content:center}
+.ic{font:600 10px ui-monospace,monospace;color:var(--b);min-width:22px;text-align:center}
+.nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:13px ui-monospace,Menlo,monospace}
+.r em{color:var(--d);font-size:11px;font-style:normal}.r button{min-width:28px;height:26px;color:var(--a);padding:0 4px}
+.k{margin-left:12px;padding-left:4px;border-left:1px solid var(--l)}
+mark{background:#f5b54455;color:inherit;border-radius:2px}.e{color:var(--d);padding:8px}
+main{flex:1;min-width:0;display:flex;flex-direction:column}
+#fbar{background:#3a2c0f;color:var(--a);padding:4px 10px;display:flex;align-items:center;gap:8px;font-size:12px}#fbar span{flex:1}
+#ed{flex:1;min-height:0;position:relative;touch-action:pan-x pan-y}
+#zm{position:absolute;top:8px;right:18px;z-index:3;display:flex;gap:6px}#zm button{width:34px;height:34px;border-radius:50%;background:var(--p);color:var(--t);border:1px solid var(--l);font:600 18px/1 ui-monospace,monospace;opacity:.6;box-shadow:0 2px 8px #0008;padding:0;display:flex;align-items:center;justify-content:center}#zm button:hover,#zm button:active{opacity:1;color:var(--a)}
+.CodeMirror{height:100%;background:var(--bg);color:var(--t);font:13px/1.55 ui-monospace,Menlo,Consolas,monospace}
+.cm-s-hje .cm-keyword{color:#c79bff}.cm-s-hje .cm-atom,.cm-s-hje .cm-number{color:#ffa86b}.cm-s-hje .cm-def{color:#7cc4ff}
+.cm-s-hje .cm-string,.cm-s-hje .cm-string-2{color:#a5e075}.cm-s-hje .cm-comment{color:#5d6b7f;font-style:italic}
+.cm-s-hje .cm-tag{color:#ff7b88}.cm-s-hje .cm-attribute,.cm-s-hje .cm-property{color:#f5b544}.cm-s-hje .cm-variable-2,.cm-s-hje .cm-operator,.cm-s-hje .cm-meta{color:#7fdbe8}.cm-s-hje .cm-bracket{color:#8b98ab}
+.cm-s-hje .CodeMirror-gutters{background:var(--bg);border-right:1px solid var(--l)}.cm-s-hje .CodeMirror-linenumber{color:#465266}
+.cm-s-hje .CodeMirror-cursor{border-left:2px solid var(--a)}.cm-s-hje .CodeMirror-selected{background:#2b3d58}.cm-s-hje .CodeMirror-activeline-background{background:#121a25}
+.cm-s-hje .CodeMirror-matchingbracket{color:var(--a)!important;outline:1px solid var(--a)}.flash{background:#f5b54444!important}
+.hid{display:inline-block;background:#1b2431;color:var(--d);border-radius:6px;padding:0 10px;font-size:12px;cursor:pointer}
+#kb{display:none;flex:none;overflow-x:auto;gap:3px;padding:4px;background:var(--p);border-top:1px solid var(--l)}
+body.kb #kb{display:flex}#kb button{background:#1b2431;flex:none;min-width:40px;height:38px;font:15px ui-monospace,monospace}
+footer{flex:none;height:24px;display:flex;gap:12px;align-items:center;padding:0 10px;background:var(--p);border-top:1px solid var(--l);color:var(--d);font-size:11px}
+#crumb{flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;text-align:right}#crumb span{cursor:pointer}#crumb span:hover{color:var(--a)}
+#menu{position:fixed;right:6px;top:calc(var(--hh) + env(safe-area-inset-top));background:var(--p);border:1px solid var(--l);border-radius:10px;padding:4px;z-index:30;display:flex;flex-direction:column;min-width:170px}
+#menu button{text-align:left}
+#run{position:fixed;inset:0;z-index:40;background:var(--bg);display:flex;flex-direction:column;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+#run header{justify-content:space-between}#run header span{display:flex;align-items:center;gap:2px;overflow-x:auto}
+#fal{display:flex;align-items:center;gap:4px;font-size:12px;color:var(--a);padding:0 8px;white-space:nowrap}#run iframe{flex:1;border:0;background:#fff}
+#con{max-height:32%;min-height:60px;overflow:auto;font:12px ui-monospace,monospace;padding:6px 10px;white-space:pre-wrap}.error{color:#ff7b88}.warn{color:var(--a)}
+#toast{position:fixed;left:50%;bottom:70px;transform:translateX(-50%);background:#263243;padding:8px 14px;border-radius:20px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:50}#toast.on{opacity:1}
+#veil{display:none}
+#p-ai.on{display:flex;flex-direction:column;gap:6px}#aiSt{font-size:12px;color:var(--d)}#aiPg{width:100%;height:6px}
+#aiSet summary{min-height:36px;display:flex;align-items:center;cursor:pointer;color:var(--d)}
+#aiSet label{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:6px 0;color:var(--d);font-size:12px}
+#aiSet select,#aiSet input{background:var(--bg);color:var(--t);border:1px solid var(--l);border-radius:8px;padding:6px;min-height:36px;font:16px system-ui;width:55%}
+#aiLog{flex:1;overflow:auto;min-height:120px}
+.aiU,.aiA{padding:6px 8px;margin:4px 0;border-radius:8px;white-space:pre-wrap;word-break:break-word}.aiU{background:#1b2431}.aiA{background:#151d29}
+.aiP{margin:4px 0;font:11px ui-monospace,monospace;white-space:pre-wrap;color:var(--d);max-height:200px;overflow:auto}
+.aiT .aiTh{color:var(--d);font-size:12px}.aiT .aiTh::before{content:'●';color:var(--a);margin-right:6px;display:inline-block;animation:aiPulse 1.2s ease-in-out infinite}
+.aiT .aiLv{margin:4px 0 0;font:11px ui-monospace,monospace;white-space:pre-wrap;color:var(--d);max-height:120px;overflow:auto}.aiT .aiLv:empty{display:none}
+@keyframes aiPulse{50%{opacity:.25}}@media(prefers-reduced-motion:reduce){.aiT .aiTh::before{animation:none}}
+.aiD{border:1px solid var(--l);border-radius:8px;margin:6px 0;overflow:hidden}.aiD pre{margin:0;font:11px/1.4 ui-monospace,monospace;overflow-x:auto;padding:4px 0}
+.aiD pre div{padding:0 8px;white-space:pre}.dr{background:#4a1d24}.da{background:#1d4a2a}.dc{color:var(--d)}
+.aiH{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:2px 8px;font-size:12px;border-bottom:1px solid var(--l)}.aiH span,.aiH em{flex:1}
+#aiMR select{background:var(--bg);color:var(--t);border:1px solid var(--l);border-radius:8px;padding:6px;min-height:36px;font:16px system-ui}.aiC{color:var(--t);background:var(--bg);padding:6px;border-radius:6px;max-height:none}
+#aiBox{display:flex;gap:6px;align-items:flex-end}#aiIn{flex:1;background:var(--bg);color:var(--t);border:1px solid var(--l);border-radius:8px;padding:8px;font:16px system-ui;resize:none}
+#aiMR{display:flex;gap:6px;align-items:center;justify-content:space-between}#aiBox button,#aiMR button,#p-ai .bar button,.aiH button{min-height:38px;background:#1b2431}#aiGo{color:var(--a)}
+@media(max-height:480px){#aiLog{min-height:60px}}
+@media(max-width:820px){aside{position:absolute;z-index:5;top:0;bottom:0;left:0;width:min(88vw,340px);transform:translateX(-102%);transition:transform .2s}
+body.open aside{transform:none;box-shadow:8px 0 30px #000a}body.open #veil{display:block;position:absolute;inset:0;z-index:4;background:#0006}}
+@media(min-width:821px){body.hide aside{display:none}}
+@media(max-height:480px){:root{--hh:36px}aside{width:250px}#kb button{height:30px}.r{min-height:28px}footer{display:none}}
+@media(prefers-reduced-motion:reduce){aside{transition:none}}
+#menu{max-height:calc(100dvh - var(--hh) - 16px);overflow:auto}
+.mdl{position:fixed;inset:0;z-index:60;background:#000b;display:flex;align-items:center;justify-content:center;padding:max(12px,env(safe-area-inset-top)) 12px max(12px,env(safe-area-inset-bottom))}
+.card{background:var(--p);border:1px solid var(--l);border-radius:14px;width:min(680px,100%);max-height:100%;display:flex;flex-direction:column;box-shadow:0 24px 70px #000c;overflow:hidden}
+.card.big{height:min(88vh,100%);width:min(880px,100%)}
+.mh{display:flex;align-items:center;gap:8px;padding:10px 10px 10px 16px;border-bottom:1px solid var(--l);font-size:16px}.mh b{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mb{overflow:auto;padding:16px 18px;line-height:1.6;font-size:15px;flex:1;min-height:0;max-width:72ch}.card.big .mb{max-width:none}
+.mb h3{margin:24px 0 6px;color:var(--a);font-size:16px}.mb h3:first-child{margin-top:0}.mb p{margin:0 0 10px}.mb ul{margin:0 0 10px;padding-left:20px}.mb li{margin:6px 0}
+.mb kbd,.mb code{background:#1b2431;border:1px solid var(--l);border-radius:5px;padding:0 5px;font:12px ui-monospace,monospace;white-space:nowrap}
+.mb .tip{background:#1b2431;border-left:3px solid var(--a);border-radius:6px;padding:8px 12px;margin:12px 0}
+.mb table{border-collapse:collapse;width:100%}.mb td{padding:6px 0;border-bottom:1px solid var(--l)}.mb td:first-child{width:45%;color:var(--d)}
+.chips{display:flex;gap:6px;overflow-x:auto;padding:8px 12px;border-bottom:1px solid var(--l);flex:none}.chips button{flex:none;background:#1b2431;border-radius:16px;height:30px;font-size:13px;color:var(--d)}
+.mf{display:flex;align-items:center;gap:8px;padding:10px 14px;border-top:1px solid var(--l);flex-wrap:wrap}.sp{flex:1}
+.mf button{height:40px;padding:0 16px;background:#1b2431}.mf .ok{background:var(--a);color:#1a1200;font-weight:600}
+.dn{display:flex;align-items:center;gap:8px;color:var(--d);font-size:13px;min-height:40px}.dn input{width:18px;height:18px}
+.card.sm{width:min(420px,100%)}.dq{width:100%;background:var(--bg);border:1px solid var(--l);color:var(--t);border-radius:8px;padding:10px;font:16px ui-monospace,monospace}.mf .dg{background:#b3323f;color:#fff;font-weight:600}.mb p:empty{display:none}
+#jmp{position:fixed;z-index:35;width:34px;min-width:0;height:34px;padding:0;border-radius:50%;background:var(--a);color:#1a1200;font:700 18px system-ui;box-shadow:0 2px 12px #000c;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:manipulation}#jmp.wait{pointer-events:none;opacity:.55}#jmp:hover{background:var(--a)}
+.kbm{display:flex;flex:none;overflow-x:auto;gap:3px;padding:4px;border-top:1px solid var(--l)}.kbm button{background:#1b2431;flex:none;min-width:40px;height:38px;font:15px ui-monospace,monospace}
+.be{flex:1;min-height:0}.be .CodeMirror{height:100%}
+.bmg{width:16px}.bmk{color:var(--a);font-size:10px;line-height:inherit;text-align:center;cursor:pointer}
+@media(max-width:600px){.mdl{align-items:flex-end;padding:0}.card{border-radius:16px 16px 0 0;width:100%;max-height:94dvh;border-bottom:0}.card.big{height:94dvh}.mf .sp{display:none}.mf button{flex:1}.dn{width:100%}}
+.pal button{display:block;width:100%;text-align:left;height:46px;font-size:15px;border-bottom:1px solid var(--l);border-radius:0}progress{accent-color:var(--a)}.mb label{display:flex;gap:8px;align-items:center;justify-content:space-between}.mb select,.mb input[type=number]{background:var(--bg);color:var(--t);border:1px solid var(--l);border-radius:8px;padding:6px;font:16px system-ui}
+#ghTok{width:100%;background:var(--bg);border:1px solid var(--l);color:var(--t);border-radius:8px;padding:8px 10px;font:16px ui-monospace,monospace;margin-bottom:6px}
+#p-gh select{width:100%;background:var(--bg);color:var(--t);border:1px solid var(--l);border-radius:8px;padding:8px;min-height:38px;font:16px system-ui;margin-bottom:6px}
+#p-gh .bar button{min-height:38px}#ghSt{white-space:pre-line;font-size:12px;margin:2px 0 8px;color:var(--d)}
+.ghU{display:flex;align-items:center;gap:6px;margin-bottom:6px}.ghU span{flex:1;min-width:0;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gsum{margin-bottom:10px;color:var(--d);font-size:13px;white-space:pre-line}.gm,.gd{display:block;margin-bottom:8px}
+.gl .r{gap:8px}.gl .r input{width:18px;height:18px;flex:none}.gs{min-width:18px;text-align:center}.gsA{color:#a5e075}.gsM{color:var(--a)}.gsD{color:#ff7b88}
+.gl .aiD{margin:2px 0 8px 26px}.gl .aiD pre{max-height:50vh;overflow:auto}.mb .ghl{margin:12px 0 4px;font-size:13px;color:var(--d)}.mb .ghl:first-child{margin-top:0}.mb .ghl span{opacity:.7}.mb .gne{color:#ff8a8a;font-size:12px;margin:4px 0 0}.mb .gnh{font-size:12px;color:var(--d);margin:10px 0 0}.mb label.gro{justify-content:flex-start;align-items:flex-start;border:1px solid var(--l);border-radius:10px;padding:10px;margin-bottom:6px;cursor:pointer}.mb label.gro:has(input:checked){border-color:var(--a);background:#1b2431}.mb label.gro input{width:18px;height:18px;margin-top:2px;accent-color:var(--a);flex:none}.mb label.gro span{display:flex;flex-direction:column;gap:2px;line-height:1.35}.mb label.gro small{color:var(--d);font-size:12px}.mb label.gpu{border:0;padding:6px 2px;align-items:center}.mf button:disabled{opacity:.4;cursor:not-allowed}.card.sm .mb p{white-space:pre-line}
+</style>
+</head>
+<body>
+<div id="app">
+<header>
+ <button id="bMenu" title="Panels">☰</button>
+ <div id="ttl"></div>
+ <button id="bUn" title="Undo">↶</button><button id="bRe" title="Redo">↷</button>
+ <button id="bFind" title="Find">⌕</button><button id="bRun" title="Run">▶</button><button id="bDoc" title="Guide">?</button><button id="bMore" title="More">⋮</button>
+</header>
+<div id="mid">
+ <aside id="side">
+  <nav id="tabs"></nav>
+  <section class="pn" id="p-tree"><div id="tree"></div></section>
+  <section class="pn" id="p-fns"><input type="text" id="fq" placeholder="Filter functions…"><div id="fl"></div></section>
+  <section class="pn" id="p-vars"><input type="text" id="vq" placeholder="Filter variables…"><div id="vl"></div></section>
+  <section class="pn" id="p-consts"><input type="text" id="cq" placeholder="Filter constants…"><div id="cl"></div></section>
+  <section class="pn" id="p-find"><input type="text" id="q" placeholder="Search project…" autocomplete="off"><input type="text" id="rp" placeholder="Replace with…" autocomplete="off">
+   <div class="opts"><label><input type="checkbox" id="cs">Aa</label><label><input type="checkbox" id="rx">Regex</label><label><input type="checkbox" id="all" checked>All files</label></div><div class="bar"><button id="rpAll">Replace all</button><button id="prv">◂ Prev</button><button id="nxt">Next ▸</button></div><div id="fr"></div></section>
+  <section class="pn" id="p-marks"><div class="bar"><button id="bmAdd">★ Mark or unmark this line</button><button id="bmClr">Clear all</button></div><div id="bml"></div></section>
+  <section class="pn" id="p-files"><div class="bar"><button id="nP">+ Project</button><button id="nF">+ File</button><button id="nD">+ Folder</button><button id="iM">Import</button></div><div id="pl"></div></section>
+  <section class="pn" id="p-gh">
+   <div id="ghIn"><p class="e">Paste a GitHub personal access token. A fine-grained token with <b>Contents: read &amp; write</b> on just the repos you need is safest. To create repositories from Tenon, the token also needs <b>Administration: read &amp; write</b> on all repositories (fine-grained) or the <b>repo</b> scope (classic).</p>
+    <input type="password" id="ghTok" placeholder="github_pat_… or ghp_…" autocomplete="off" spellcheck="false">
+    <div class="bar"><button id="ghCon">Connect</button></div>
+    <p class="e" style="font-size:12px">Everything here is local. Your token is kept in this app's own IndexedDB on this device, and it is only ever sent to api.github.com when you pull or push. There is no Tenon server and nothing is tracked. Your projects stay in your browser too. Note that a preview run with Full access shares this editor's storage and could read the token. Disconnect removes it.</p></div>
+   <div id="ghOn" hidden><p class="e" style="font-size:12px">All local: your token is stored in this app's IndexedDB on this device and is only sent to api.github.com. Nothing goes through any other server.</p><div class="ghU"><span id="ghWho"></span><button id="ghOut">Disconnect</button></div>
+    <input type="text" id="ghFq" placeholder="Filter repositories…" autocomplete="off"><select id="ghRp" aria-label="Repository"></select><select id="ghBr" aria-label="Branch"></select>
+    <div id="ghSt"></div><div class="bar"><button id="ghPull">⇩ Pull</button><button id="ghPush">⇧ Push</button><button id="ghNew" title="Create a new repository from this project">＋ New repo</button><button id="ghRef" title="Reload repository list">↻</button></div></div>
+  </section>
+  <section class="pn" id="p-ai" hidden><div id="aiSt">Import a model from this device to begin</div><progress id="aiPg" max="1" value="0"></progress>
+   <div id="aiWarn" class="e" hidden>⚠ WebGPU not available — running on CPU (WASM) will be slow.</div>
+   <div class="bar"><button id="aiImD" title="Pick the model folder">Import folder</button><button id="aiImF" title="Pick model files">Import files</button><button id="aiLd">Load</button><button id="aiRm">Remove</button><button id="aiCk" title="Run the page and feed console errors back">Run &amp; check</button></div>
+   <details id="aiSet"><summary>Settings</summary><label>Model<select id="aiM"></select></label><label>Device<select id="aiDv"><option>webgpu</option><option>wasm</option></select></label>
+    <label>Dtype<select id="aiDt"><option>q4f16</option><option>q4</option><option>q8</option><option>fp16</option><option>fp32</option></select></label>
+    <label>Max new tokens<input type="number" id="aiMx" min="32" max="4096"></label><label>Temperature<input type="number" id="aiTp" min="0" max="2" step="0.1"></label></details>
+   <div id="aiLog"></div>
+   <div id="aiMR"><select id="aiMode" title="Code agent edits with your approval; Chat only reads and advises"><option value="code">Code agent</option><option value="chat">Chat (read-only)</option></select><button id="aiClr" title="Clear the chat (or type /clear)">Clear chat</button></div>
+   <div id="aiBox"><textarea id="aiIn" rows="2" placeholder="e.g. change the counter to count by 2"></textarea><button id="aiGo">Send</button><button id="aiStop" hidden>Stop</button></div>
+   <input type="file" id="aiFd" webkitdirectory multiple hidden><input type="file" id="aiFm" multiple hidden></section>
+ </aside>
+ <div id="veil"></div>
+ <main><div id="fbar" hidden><span id="fl2"></span><button id="fx">Exit focus</button></div><div id="ed"><div id="zm"><button id="zmO" title="Zoom out" aria-label="Zoom out">−</button><button id="zmI" title="Zoom in" aria-label="Zoom in">+</button></div></div></main>
+</div>
+<div id="kb"></div>
+<footer><span id="pos"></span><span id="crumb"></span></footer>
+</div>
+<div id="menu" hidden></div>
+<div id="run" hidden><header><b style="padding:0 8px">Preview</b><span><label id="fal" title="Lets the page use IndexedDB, localStorage and cookies. It shares this editor's storage origin; turn off to isolate."><input type="checkbox" id="fa">Full access</label><button id="rSt">Storage</button><button id="rRs">Reset data</button><button id="rRl" title="Reload">↻</button><button id="rx2">✕</button></span></header><iframe id="fr2"></iframe><div id="con"></div></div>
+<div id="toast"></div>
+<input type="file" id="imp" multiple hidden accept=".html,.htm,.js,.css,.json,.txt,.tenon">
+
+<script type="text/plain" id="wk">
+const KW=new Set('if for while switch catch function return with else do try typeof new await in of delete void throw case'.split(' '));
+const RX=new Set('return typeof case of in delete void throw new else do yield await'.split(' '));
+function tpl(s,i){const n=s.length;while(i<n){const c=s[i];if(c=='\\')i+=2;else if(c=='`')return i+1;else if(c=='$'&&s[i+1]=='{'){let d=1;i+=2;while(i<n&&d){const h=s[i];if(h=='{')d++;else if(h=='}')d--;else if(h=='`'){i=tpl(s,i+1);continue}else if(h=='"'||h=="'"){i++;while(i<n&&s[i]!=h){if(s[i]=='\\')i++;i++}}i++}}else i++}return n}
+function tok(s){const T=[],n=s.length;let i=0,nl=false,pv=null;
+ const push=(t,v,a)=>{const o={t,v,a,b:i,nl};T.push(o);pv=o;nl=false};
+ while(i<n){const c=s[i];
+  if(c=='\n'){nl=true;i++;continue}if(c<=' '){i++;continue}
+  const a=i;
+  if(c=='/'&&s[i+1]=='/'){i=s.indexOf('\n',i);if(i<0)i=n;continue}
+  if(c=='/'&&s[i+1]=='*'){const e=s.indexOf('*/',i+2);if(s.slice(i,e<0?n:e).includes('\n'))nl=true;i=e<0?n:e+2;continue}
+  if(c=='"'||c=="'"){i++;while(i<n&&s[i]!=c&&s[i]!='\n'){if(s[i]=='\\')i++;i++}i++;push('s',c,a)}
+  else if(c=='`'){i=tpl(s,i+1);push('s','`',a)}
+  else if(c=='/'&&(!pv||(pv.t=='p'&&pv.v!=')'&&pv.v!=']')||(pv.t=='i'&&RX.has(pv.v)))){i++;let cl=0;while(i<n&&s[i]!='\n'&&(s[i]!='/'||cl)){if(s[i]=='\\')i++;else if(s[i]=='[')cl=1;else if(s[i]==']')cl=0;i++}i++;while(/[a-z]/i.test(s[i]||''))i++;push('r','/',a)}
+  else if(/[A-Za-z_$\u00a0-\uffff]/.test(c)){i++;while(i<n&&/[\w$\u00a0-\uffff]/.test(s[i]))i++;push('i',s.slice(a,i),a)}
+  else if(/\d/.test(c)){i++;while(i<n&&/[\w.]/.test(s[i]))i++;push('n','0',a)}
+  else{i++;if(c=='='&&s[i]=='>')i++;push('p',s.slice(a,i),a)}}
+ return T}
+function fin(r,s,base){const i=s.indexOf('\n',r.a-base);r.ml=i>=0&&i<r.b-base;if(r.f){r.f.b=r.b;delete r.f}}
+function js2(s,base,root,R){
+ const T=tok(s);let bd=0,st=[],pend=null;
+ const cur=()=>st.length?st[st.length-1].r:root;
+ const path=()=>st.map(x=>x.r.name).join(' › ')||root.name;
+ const isId=x=>x&&(x.t=='i'||x.v==')'||x.v==']');
+ function mt(i){const o=T[i].v,c={'(':')','[':']','{':'}'}[o];let d=0;for(let j=i;j<T.length;j++){if(T[j].t=='p'){if(T[j].v==o)d++;else if(T[j].v==c&&--d==0)return j}}return T.length-1}
+ function mk(kind,name,a){const r={kind,name,a:a+base,b:a+base,c:[]},par=cur();if(kind!='cb'){r.f={kind,name,a:r.a,b:r.a,path:path(),id:R.fns.length};if(par.kind=='class')r.f.p=par.fid;r.fid=r.f.id;R.fns.push(r.f)}par.c.push(r);return r}
+ function arrow(k){let po=k-1;if(T[po]&&T[po].v==')'){let d=0;for(;po>=0;po--){if(T[po].v==')')d++;else if(T[po].v=='('&&--d==0)break}}
+  let pi=po-1;if(T[pi]&&T[pi].v=='async')pi--;
+  const p=T[pi],pp=T[pi-1];let name,kind='fn';
+  if(p&&(p.v=='='||p.v==':')&&pp&&pp.t=='i')name=pp.v;
+  else if(p&&p.v=='('&&!isId(pp)){name='IIFE';kind='iife'}
+  else{name=(p&&p.v=='('&&pp&&pp.t=='i')?pp.v+'()':'callback';kind='cb'}
+  const nx=T[k+1];if(!nx)return;const a=T[pi+1].a;
+  if(nx.v=='{')pend=mk(kind,name,a);
+  else if(kind!='cb'){const r=mk(kind,name,a);let e=s.indexOf('\n',nx.a);if(e<0)e=s.length;r.b=e+base;fin(r,s,base)}}
+ function decl(k){const kind=T[k].v[0],sc=path();let j=k+1;
+  const V=w=>({name:w.v,k:kind,a:w.a+base,s:sc});
+  for(;;){const u=T[j];if(!u)break;
+   if(u.t=='p'&&(u.v=='{'||u.v=='[')){const e=mt(j);for(let x=j+1;x<e;x++){const w=T[x];if(w.t=='i'&&T[x-1].v!=':'&&T[x-1].v!='='&&T[x+1]&&/^[,}\]=]$/.test(T[x+1].v))R.vars.push(V(w))}j=e+1}
+   else if(u.t=='i'){R.vars.push(V(u));j++}else break;
+   let lv=0;
+   for(;j<T.length;j++){const w=T[j],pv=T[j-1];
+    if(w.t=='p'){if(w.v=='('||w.v=='['||w.v=='{')lv++;else if(w.v==')'||w.v==']'||w.v=='}'){if(!lv)break;lv--}else if(!lv&&(w.v==';'||w.v==','))break}
+    if(!lv&&w.nl&&!/^[,=+\-*\/?:&|.(\[{]$/.test(pv.v)&&!/^[+\-*\/?:&|.,]/.test(w.v)){j=T.length;break}}
+   if(T[j]&&T[j].t=='p'&&T[j].v==','){j++;continue}break}}
+ for(let k=0;k<T.length;k++){const t=T[k],p=T[k-1];
+  if(t.t=='p'){
+   if(t.v=='{'){bd++;if(pend){st.push({r:pend,bd});pend=null}}
+   else if(t.v=='}'){const o=st[st.length-1];if(o&&o.bd==bd){o.r.b=t.b+base;fin(o.r,s,base);st.pop()}bd--}
+   else if(t.v=='=>')arrow(k);
+   else if(t.v=='('&&p&&p.t=='i'&&!KW.has(p.v)){const j=mt(k);if(T[j+1]&&T[j+1].v=='{'){let kind='method',nm=p.v,q=T[k-2];
+    if(q&&q.t=='i'&&(q.v=='get'||q.v=='set')){kind=q.v=='get'?'getter':'setter';q=T[k-3]}else if(q&&q.t=='i'&&q.v=='async')q=T[k-3];
+    if(q&&q.t=='i'&&q.v=='static')nm='static '+nm;
+    pend=mk(kind,nm,p.a);k=j}}
+  }else if(t.t=='i'){
+   if(p&&p.v=='.')continue;
+   if(t.v=='function'){let pi=k-1;if(T[pi]&&T[pi].v=='async')pi--;const q=T[pi],qq=T[pi-1];
+    let po=k+1,nm=null,kind='fn';if(T[po]&&T[po].v=='*')po++;
+    if(T[po]&&T[po].t=='i'){nm=T[po].v;po++}
+    if(!nm){if(q&&(q.v=='!'||q.v=='+'||(q.v=='('&&!isId(qq)))){nm='IIFE';kind='iife'}
+     else if(q&&(q.v=='='||q.v==':')&&qq&&qq.t=='i')nm=qq.v;
+     else{nm=q&&q.v=='('&&qq&&qq.t=='i'?qq.v+'()':'callback';kind='cb'}}
+    if(T[po]&&T[po].v=='('){const j=mt(po);if(T[j+1]&&T[j+1].v=='{'){pend=mk(kind,nm,(kind=='iife'?q:T[pi+1]).a);k=j}}}
+   else if(t.v=='class'&&T[k+1]&&(T[k+1].v=='{'||T[k+1].t=='i')){const nx=T[k+1];let j=k+1;while(j<T.length&&T[j].v!='{'&&T[j].v!=';')j++;
+    if(T[j]&&T[j].v=='{'){pend=mk('class',nx.t=='i'&&nx.v!='extends'?nx.v:'(anon)',t.a);k=j-1}}
+   else if((t.v=='var'||t.v=='let'||t.v=='const')&&!(p&&p.v=='('))decl(k)}}
+ st.forEach(o=>{o.r.b=base+s.length;fin(o.r,s,base)});
+ (function pr(r){r.c=r.c.filter(x=>!(x.kind=='cb'&&!x.ml));if(r.kind=='class'){const rk=x=>x.kind=='setter'?1:x.kind=='getter'?2:0;r.c=r.c.map((x,i)=>[x,i]).sort((a,b)=>rk(a[0])-rk(b[0])||a[1]-b[1]).map(x=>x[0])}r.c.forEach(pr)})(root)}
+function css(s,base,root,R){const st=[root],n=s.length;let i=0,ps=-1;
+ const decl=e=>{const t=s.slice(ps,e),m=/^(--[\w-]+)\s*:/.exec(t),top=st[st.length-1];
+  if(m)R.vars.push({name:m[1],k:'p',a:ps+base,s:top.name});
+  else if(t[0]=='@')top.c.push({kind:'at',name:t.replace(/\s+/g,' ').trim(),a:ps+base,b:e+base,c:[]})};
+ while(i<n){const c=s[i];
+  if(c=='/'&&s[i+1]=='*'){const e=s.indexOf('*/',i+2);i=e<0?n:e+2;continue}
+  if(c<=' '){i++;continue}
+  if(ps<0)ps=i;
+  if(c=='"'||c=="'"){i++;while(i<n&&s[i]!=c){if(s[i]=='\\')i++;i++}i++;continue}
+  if(c=='('){const e=s.indexOf(')',i);i=e<0?n:e+1;continue}
+  if(c==';'){if(ps<i)decl(i);ps=-1;i++;continue}
+  if(c=='{'){const nm=s.slice(ps,i).replace(/\s+/g,' ').trim(),r={kind:nm[0]=='@'?'at':'rule',name:nm||'(rule)',a:ps+base,b:i+base,c:[]};st[st.length-1].c.push(r);st.push(r);ps=-1;i++;continue}
+  if(c=='}'){if(ps>=0&&ps<i)decl(i);if(st.length>1)st.pop().b=i+1+base;ps=-1;i++;continue}
+  i++}
+ while(st.length>1)st.pop().b=n+base}
+function parse(h,js,cs){
+ const R={scripts:[],styles:[],els:[],vars:[],fns:[]},rg=[];
+ if(js){const sc={kind:'script',name:'(file)',a:0,b:h.length,c:[]};R.scripts.push(sc);js2(h,0,sc,R);return R}
+ if(cs){const sc={kind:'style',name:'(file)',a:0,b:h.length,c:[]};R.styles.push(sc);css(h,0,sc,R);return R}
+ const re=/<(script|style)\b([^>]*)>([\s\S]*?)<\/\1\s*>/gi;let m,k=0,q=0;
+ while(m=re.exec(h)){const a=m.index+m[1].length+m[2].length+2,b=a+m[3].length;rg.push([a,b]);
+  if(m[1].toLowerCase()=='style'){const sc={kind:'style',a,b,name:'<style> #'+(++q),c:[]};R.styles.push(sc);css(m[3],a,sc,R);continue}
+  const ty=(/\btype\s*=\s*["']?([^"'\s>]+)/i.exec(m[2])||[])[1],js2ok=!ty||/javascript|module/i.test(ty);
+  const src=(/\bsrc\s*=\s*["']?([^"'\s>]+)/i.exec(m[2])||[])[1];
+  const sc={kind:'script',name:'<script> #'+(++k)+(src?' src':js2ok?'':' ('+ty+')'),a,b,c:[]};R.scripts.push(sc);
+  if(js2ok&&m[3].trim())js2(m[3],a,sc,R)}
+ const er=/<([a-z][\w-]*)\b[^>]*?\sid\s*=\s*["']([^"']+)["']/gi;
+ while((m=er.exec(h))&&R.els.length<500){if(!rg.some(r=>m.index>=r[0]&&m.index<=r[1]))R.els.push({kind:'el',name:m[1]+'#'+m[2],a:m.index,b:0})}
+ return R}
+function search(d){let re;try{re=new RegExp(d.rx?d.q:d.q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),d.cs?'':'i')}catch(e){return{err:1,r:[]}}
+ const out=[];
+ for(const f of d.files){const L=f.text.split('\n');for(let i=0;i<L.length&&out.length<500;i++){const m=re.exec(L[i]);if(m&&m[0].length){const o=Math.max(0,m.index-30);out.push({f:f.id,n:f.name,l:i,c:m.index,len:m[0].length,t:L[i].slice(o,o+120),o:m.index-o})}}}
+ return{r:out}}
+onmessage=e=>{const d=e.data;let r;
+ try{r=d.t=='parse'?parse(d.text,d.js,d.css):search(d)}catch(x){r=d.t=='parse'?{scripts:[],styles:[],els:[],vars:[],fns:[]}:{r:[]}}
+ postMessage({t:d.t,id:d.id,r})};
+</script>
+<script type="text/plain" id="aiwk">
+// Tenon AI worker (module). Model files come from the device (imported into IndexedDB), never from the network.
+const LIB='https://cdn.jsdelivr.net/npm/@huggingface/transformers@4',CN='tenon-ai-v1',MK='/local/model/resolve/';
+let F={},T,tok,model,stopper,cache;const P=m=>postMessage(m),ofetch=self.fetch.bind(self);
+const C=async()=>cache||(cache=await caches.open(CN));
+self.fetch=async(u,o)=>{const url=typeof u=='string'?u:u.url||String(u),i=url.indexOf(MK);
+ if(i>=0){const rel=decodeURIComponent(url.slice(i+MK.length).replace(/^[^/]+\//,'').split('?')[0]),f=F[rel];
+  return f?new Response(f,{status:200,headers:{'content-length':f.size}}):new Response('',{status:404})}
+ if(!/^https:\/\/cdn\.jsdelivr\.net\//.test(url))return ofetch(u,o);
+ const c=await C(),h=await c.match(url);if(h)return h;const r=await ofetch(u,o);if(r.status==200)c.put(url,r.clone());return r};
+async function lib(){if(T)return T;const c=await C();let r=await c.match(LIB);
+ if(!r){try{r=await ofetch(LIB)}catch(e){throw new Error('Library not cached yet — connect once to load Transformers.js')}c.put(LIB,r.clone())}
+ const u=URL.createObjectURL(new Blob([await r.text()],{type:'text/javascript'}));
+ try{T=await import(u)}catch(e){T=await import(LIB)}return T}
+async function load(c,files){F={};files.forEach(([r,b])=>F[r]=b);
+ const miss=['config.json','tokenizer.json','tokenizer_config.json'].filter(k=>!F[k]);
+ if(miss.length)throw new Error('Imported model is missing '+miss.join(', ')+' (stored: '+Object.keys(F).join(', ')+'). Remove it and import again with these files.');
+ const t=await lib(),{env,AutoTokenizer,AutoModelForCausalLM}=t;
+ env.fetch=self.fetch;env.allowLocalModels=false;env.useCustomCache=true;
+ env.customCache={match:async k=>/\/local\/model\//.test(k)?undefined:(await C()).match(k),put:async(k,r)=>{if(!/\/local\/model\//.test(k))await(await C()).put(k,r)}};   // must return Promises (the library calls .catch on put)
+ if(model&&model.dispose)try{await model.dispose()}catch(e){}model=null;
+ const pr={},cb=d=>{if(d.status=='progress'&&d.total){pr[d.file]=[d.loaded,d.total];let l=0,n=0;for(const k in pr){l+=pr[k][0];n+=pr[k][1]}P({t:'prog',p:l/n,s:'Reading model '+(l/1e6|0)+' / '+(n/1e6|0)+' MB'})}};
+ tok=await AutoTokenizer.from_pretrained('local/model',{progress_callback:cb});
+ let dev,err;for(const d of c.device=='webgpu'&&self.navigator&&navigator.gpu?['webgpu','wasm']:['wasm']){
+  try{model=await AutoModelForCausalLM.from_pretrained('local/model',{device:d,dtype:c.dtype,progress_callback:cb});dev=d;break}catch(e){err=e}}
+ if(!model)throw new Error((err&&err.message||'load failed')+' — this model needs WebGPU (no CPU kernel); also check that onnx/model_'+c.dtype+'.onnx and its .onnx_data were imported');
+ P({t:'ready',dev,dtype:c.dtype})}
+async function gen(m,c){const{TextStreamer,InterruptableStoppingCriteria}=T;stopper=new InterruptableStoppingCriteria();
+ const inp=tok.apply_chat_template(m,{add_generation_prompt:true,return_dict:true,enable_thinking:false});let out='';
+ const st=new TextStreamer(tok,{skip_prompt:true,skip_special_tokens:true,callback_function:s=>{out+=s;P({t:'tok',s})}});
+ await model.generate({...inp,max_new_tokens:c.max,do_sample:c.temp>0,temperature:c.temp||1,streamer:st,stopping_criteria:stopper});P({t:'done',text:out})}
+onmessage=async e=>{const d=e.data;try{if(d.t=='load')await load(d.c,d.files);else if(d.t=='gen')await gen(d.msgs,d.c);else if(d.t=='stop'&&stopper)stopper.interrupt()}catch(x){P({t:'err',m:x.message||String(x)})}};
+</script>
+
+<script type="text/plain" id="fmtwk">
+const U={p:'https://cdn.jsdelivr.net/npm/prettier@3.3.3/',t:'https://cdn.jsdelivr.net/npm/terser@5.31.6/dist/bundle.min.js',c:'https://cdn.jsdelivr.net/npm/csso@5.0.5/dist/csso.js'},G={};
+const need=k=>{if(G[k])return;importScripts(k=='t'?U.t:k=='c'?U.c:k=='p'?U.p+'standalone.js':U.p+'plugins/'+k+'.js');G[k]=1};
+const esc=t=>t.replace(new RegExp('<\\/scr'+'ipt','gi'),'<\\/scr'+'ipt'),PO=o=>({tabWidth:o.w||2,useTabs:!o.w,printWidth:o.pw,semi:o.semi,singleQuote:o.sq});
+async function fmt(k,s,o){need('p');
+ if(k=='js'||k=='json'){need('babel');need('estree');return prettier.format(s,{...PO(o),parser:k=='json'?'json':'babel',plugins:[prettierPlugins.babel,prettierPlugins.estree]})}
+ if(k=='css'){need('postcss');return prettier.format(s,{...PO(o),parser:'css',plugins:[prettierPlugins.postcss]})}
+ need('html');return prettier.format(s,{...PO(o),parser:'html',embeddedLanguageFormatting:'off',plugins:[prettierPlugins.html]})}
+const BLK='html|head|body|meta|link|title|base|div|section|article|aside|header|footer|main|nav|p|ul|ol|li|dl|dt|dd|h[1-6]|table|thead|tbody|tfoot|tr|td|th|form|fieldset|hr|br|script|style|noscript|template|details|summary|figure|figcaption|blockquote';
+function mh(s){const K=[];s=s.replace(/<(pre|textarea)\b[\s\S]*?<\/\1>/gi,m=>(K.push(m),'\u0001'+(K.length-1)+'\u0002'));
+ s=s.replace(/<!--(?!\[if)[\s\S]*?-->/g,'').replace(/\s+/g,' ').replace(new RegExp('\\s*(</?(?:'+BLK+')\\b[^>]*>)\\s*','gi'),'$1').trim();
+ return s.replace(/\u0001(\d+)\u0002/g,(m,i)=>K[i])}
+async function mini(k,s,o){
+ if(k=='js'){need('t');const r=await Terser.minify(s,{ecma:2020,compress:{drop_console:o.dc,drop_debugger:o.dc},mangle:o.mg,format:{comments:false}});return r.code||''}
+ if(k=='css'){need('c');return csso.minify(s).css}
+ if(k=='json')return JSON.stringify(JSON.parse(s));
+ return mh(s)}
+/* split at top-level boundaries so huge scripts and stylesheets are processed in pieces */
+function chunks(s,k,max){const out=[],n=s.length,J=k=='js';let i=0,d=0,st=0,pv='';
+ while(i<n){const c=s[i];
+  if(c=='"'||c=="'"){for(i++;i<n&&s[i]!=c&&s[i]!='\n';i++)if(s[i]=='\\')i++;i++;pv='a';continue}
+  if(c=='`'&&J){for(i++;i<n&&s[i]!='`';i++)if(s[i]=='\\')i++;i++;pv='a';continue}
+  if(c=='/'&&s[i+1]=='*'){i=s.indexOf('*/',i+2);i=i<0?n:i+2;continue}
+  if(J&&c=='/'&&s[i+1]=='/'){i=s.indexOf('\n',i);if(i<0)i=n;continue}
+  if(J&&c=='/'&&(!pv||/[(,=:\[!&|?{};+\-*%<>~^]/.test(pv))){for(i++;i<n&&s[i]!='/'&&s[i]!='\n';i++){if(s[i]=='\\')i++;else if(s[i]=='['){for(i++;i<n&&s[i]!=']';i++)if(s[i]=='\\')i++}}i++;pv='a';continue}
+  if(c=='{'||c=='('||c=='[')d++;
+  else if(c=='}'||c==')'||c==']'){d--;
+   if(d==0&&c=='}'&&i+1-st>=max&&(s[i+1]=='\n'||s[i+1]=='\r')){const nw=(s.slice(i+1,i+40).match(/^\s*(\S+)/)||[])[1]||'';
+    if(!/^(else|catch|finally|while|[.,)\]:?+\-*\/|&=<>])/.test(nw)){out.push(s.slice(st,i+1));st=i+1}}}
+  if(c>' ')pv=c;i++}
+ out.push(s.slice(st));return out.filter(x=>x.trim())}
+function split(h){const P=[];const sh=h.replace(/(<(script|style)\b([^>]*)>)([\s\S]*?)(<\/\2\s*>)/gi,(m,o,tag,at,body,c)=>{if(!body.trim())return m;let k='css';
+  if(tag.toLowerCase()=='script'){const t=(/\btype\s*=\s*["']?([^"'\s>]+)/i.exec(at)||[])[1]||'';k=/^$|^module$|^(text|application)\/(x-)?(javascript|ecmascript)$/i.test(t)?'js':/json|importmap|speculationrules/i.test(t)?'json':'raw'}
+  P.push({k,s:body});return o+'/*@@T'+(P.length-1)+'@@*/'+c});return{sh,P}}
+const prog=c=>postMessage({t:'p',id:c.id,p:Math.min(1,c.done/c.total),i:c.i,n:c.n}),er=(c,k,x)=>{c.fail++;c.errs.push(k+': '+String(x&&x.message||x).split('\n')[0].slice(0,160))};
+async function part(f,p,o,c){const{k,s}=p;if(k=='raw'||!s.trim()){c.done+=s.length;return s}
+ try{let r;if((k=='js'||k=='css')&&s.length>(o.ch||150000)){const rs=[];for(const x of chunks(s,k,o.ch||150000)){rs.push(await f(k,x,o));c.done+=x.length;prog(c)}r=rs.join(f==mini?(k=='js'?';':''):'\n')}
+  else{r=await f(k,s,o);c.done+=s.length;prog(c)}return r}
+ catch(x){er(c,k,x);c.done+=s.length;prog(c);return s}}
+onmessage=async e=>{const d=e.data,f=d.op=='f'?fmt:mini,o=d.o,c={id:d.id,total:d.s.length||1,done:0,fail:0,errs:[],i:1,n:1};
+ try{let out;
+  if(d.k=='html'){const{sh,P}=split(d.s),R=[];c.n=P.length+1;
+   for(let i=0;i<P.length;i++){c.i=i+1;R[i]=await part(f,P[i],o,c)}
+   c.i=c.n;let shell=sh;try{shell=await f('html',sh,o)}catch(x){er(c,'html',x)}c.done+=sh.length;prog(c);
+   let seen=0;out=shell.replace(/([ \t]*)\/\*@@T(\d+)@@\*\//g,(m,sp,i)=>{seen++;let b=esc(R[i].replace(/^\s*\n|\s+$/g,''));
+    if(d.op!='f')return b;return sp&&!b.includes('`')?b.split('\n').map(l=>l?sp+l:l).join('\n'):sp+b});
+   if(seen!=P.length)throw new Error('Script/style placeholders were lost while processing the page');if(d.op=='f'&&!out.endsWith('\n'))out+='\n'}
+  else out=await part(f,{k:d.k,s:d.s},o,c);
+  postMessage({t:'done',id:d.id,out,fail:c.fail,errs:c.errs})}
+ catch(x){postMessage({t:'err',id:d.id,m:String(x&&x.message||x)})}};
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/xml/xml.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/css/css.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/htmlmixed/htmlmixed.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closetag.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/foldcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/foldgutter.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/brace-fold.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/xml-fold.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/selection/active-line.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/comment/comment.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/search/searchcursor.min.js"></script>
+<script>
+const $=s=>document.querySelector(s),OPEN=new Set(),uid=()=>Math.random().toString(36).slice(2,9);
+const IC={script:'JS',style:'CSS',el:'‹›',iife:'()',fn:'ƒ',cb:'↳',rule:'{}',at:'@',p:'--',method:'m',setter:'set',getter:'get',class:'C',c:'c',l:'l',v:'v'};
+const SAMPLE=`<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Demo</title>
+<style>body{font:16px system-ui;padding:2rem;background:#111;color:#eee}button{padding:.6em 1em}</style>
+</head>
+<body>
+<h1 id="title">Counter</h1>
+<button id="inc">+1</button> <span id="out">0</span>
+<script>
+(function () {
+  'use strict';
+  const state = { n: 0 };
+  let out = document.getElementById('out');
+  function render() {
+    out.textContent = state.n;
+    console.log('n =', state.n);
+  }
+  class Counter {
+    inc() { state.n++; render(); }
+  }
+  const c = new Counter();
+  document.getElementById('inc').addEventListener('click', function () {
+    c.inc();
+    if (state.n % 5 === 0) console.log('five!');
+  });
+  const reset = () => { state.n = 0; render(); };
+  window.reset = reset;
+})();
+<\/script>
+</body>
+</html>`;
+const TPL='<!DOCTYPE html>\n<html>\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width,initial-scale=1">\n<title>New page</title>\n<style>\n  body{font:16px system-ui;padding:1rem}\n</style>\n</head>\n<body>\n<h1>Hello</h1>\n<script>\n(function () {\n  console.log("hi");\n})();\n<\/script>\n</body>\n</html>';
+function load(){try{const j=JSON.parse(localStorage.getItem('forge1'));if(j&&j.ps&&j.ps.length)return j}catch(e){}
+ const f={id:uid(),name:'index.html',text:SAMPLE},p={id:uid(),name:'Demo project',files:[f]};return{ps:[p],p:p.id,f:f.id}}
+let S=load(),R={scripts:[],styles:[],els:[],vars:[],fns:[]},seq=0,sq=0,docs={},fm=[],TM;
+const cP=()=>S.ps.find(p=>p.id==S.p)||S.ps[0],cF=()=>cP().files.find(f=>f.id==S.f)||cP().files[0];
+const persist=()=>{try{localStorage.setItem('forge1',JSON.stringify(S))}catch(e){}};
+const mode=n=>/\.js$/i.test(n)?'javascript':/\.css$/i.test(n)?'css':'htmlmixed';
+const W=new Worker(URL.createObjectURL(new Blob([$('#wk').textContent],{type:'text/javascript'})));
+const cm=CodeMirror($('#ed'),{theme:'hje',lineNumbers:true,matchBrackets:true,autoCloseBrackets:true,autoCloseTags:true,styleActiveLine:true,foldGutter:true,
+ gutters:['CodeMirror-linenumbers','CodeMirror-foldgutter'],indentUnit:2,tabSize:2,extraKeys:{
+ Tab:c=>c.somethingSelected()?c.indentSelection('add'):c.replaceSelection('  '),'Shift-Tab':c=>c.indentSelection('subtract'),
+ 'Ctrl-/':'toggleComment','Cmd-/':'toggleComment','Ctrl-F':()=>openFind(),'Cmd-F':()=>openFind(),'Ctrl-Enter':()=>run(),Esc:()=>unfocus()}});
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(t.h);t.h=setTimeout(()=>t.classList.remove('on'),1600)}
+function flush(){const f=cF();if(f&&docs[f.id])f.text=docs[f.id].getValue()}
+const ln=a=>cm.posFromIndex(a).line+1;
+/* ---------- collapsible row ---------- */
+function rowEl(o){
+ const d=document.createElement('div'),r=document.createElement('div'),has=!!o.kids;d.className='n';r.className='r';
+ const tg=document.createElement('i');tg.className='tg';tg.textContent=has?'▸':'';
+ const ic=document.createElement('b');ic.className='ic';ic.textContent=o.icon||'';
+ const nm=document.createElement('span');nm.className='nm';
+ if(o.hl){const[s,l]=o.hl,m=document.createElement('mark');m.textContent=o.name.substr(s,l);nm.append(o.name.slice(0,s),m,o.name.slice(s+l))}else nm.textContent=o.name;
+ const mt=document.createElement('em');mt.textContent=o.meta==null?'':o.meta;r.append(tg,ic,nm,mt);
+ (o.acts||[]).forEach(([l,f,t])=>{const b=document.createElement('button');b.textContent=l;b.title=t||'';b.onclick=e=>{e.stopPropagation();f()};r.append(b)});
+ d.append(r);let k=null;
+ const set=v=>{if(!has)return;if(v){if(!k){k=document.createElement('div');k.className='k';o.kids().forEach(x=>k.append(x));d.append(k)}k.hidden=false;OPEN.add(o.key)}else{if(k)k.hidden=true;OPEN.delete(o.key)}tg.textContent=v?'▾':'▸';sv()};
+ tg.onclick=e=>{e.stopPropagation();set(!OPEN.has(o.key))};
+ r.onclick=()=>{if(o.go)o.go();else if(has)set(!OPEN.has(o.key))};
+ if(has&&(o.open||OPEN.has(o.key)))set(true);
+ return d}
+/* ---------- navigation & focus mode ---------- */
+function flash(line){const h=cm.addLineClass(line,'background','flash');setTimeout(()=>cm.removeLineClass(h,'background','flash'),900)}
+function closeDrawer(){if(innerWidth<=820)document.body.classList.remove('open')}
+function go(a){const A=cm.posFromIndex(a);if(fm.length&&cm.findMarksAt(A).some(m=>fm.includes(m)))unfocus();
+ cm.setCursor(A);cm.scrollIntoView({from:A,to:A},cm.getScrollInfo().clientHeight/3);flash(A.line);closeDrawer();if(!matchMedia('(pointer:coarse)').matches)cm.focus()}
+function unfocus(){fm.forEach(m=>m.clear());fm=[];$('#fbar').hidden=true}
+function focus(a,b,label){unfocus();if(!(b>a))return;
+ const A=cm.posFromIndex(a),B=cm.posFromIndex(b),s={line:A.line,ch:0},e={line:B.line,ch:cm.getLine(B.line).length},last=cm.lastLine();
+ const w=(t)=>{const x=document.createElement('span');x.className='hid';x.textContent=t;x.onclick=unfocus;return x};
+ if(s.line>0){const m=cm.markText({line:0,ch:0},s,{collapsed:true,replacedWith:w('▲ '+s.line+' lines hidden, tap to show')});m.__k='b';fm.push(m)}
+ if(e.line<last){const m=cm.markText(e,{line:last,ch:cm.getLine(last).length},{collapsed:true,replacedWith:w('▼ '+(last-e.line)+' lines hidden, tap to show')});m.__k='a';fm.push(m)}
+ $('#fl2').textContent='◎ Focus edit: only this block is editable';$('#fbar').hidden=false;cm.setCursor(s);cm.scrollTo(0,0);closeDrawer();cm.refresh()}
+$('#fx').onclick=unfocus;
+/* ---------- renderers ---------- */
+function tn(n,pk,i){const key=pk+'/'+i+n.kind+n.name;
+ return rowEl({icon:IC[n.kind]||'•',name:n.name,meta:'L'+ln(n.a),key,kids:n.c&&n.c.length?()=>n.c.map((c,j)=>tn(c,key,j)):null,go:()=>go(n.a),acts:n.b>n.a?[['◎',()=>focus(n.a,n.b),'Focus edit'],['✎',()=>blockEdit(n.a,n.b,n.name),'Edit this block on its own']]:null})}
+function rTree(){const t=$('#tree');t.textContent='';
+ [['Scripts','JS',R.scripts],['Styles','CSS',R.styles],['Elements with id','‹›',R.els]].forEach(([nm,ic,arr])=>{if(arr.length)t.append(rowEl({icon:ic,name:nm,meta:arr.length,key:'g'+nm,kids:()=>arr.map((n,i)=>tn(n,nm,i))}))});
+ if(!t.children.length)t.innerHTML='<p class="e">No script, style or id found in this file.</p>'}
+function grp(id,items,gk,q,mkr,ok){const el=$(id);el.textContent='';q=q.trim().toLowerCase();const g={};
+ items.filter(ok||(i=>!q||i.name.toLowerCase().includes(q))).forEach(i=>(g[gk(i)]=g[gk(i)]||[]).push(i));
+ const ks=Object.keys(g);if(!ks.length){el.innerHTML='<p class="e">Nothing found</p>';return}
+ ks.forEach(k=>el.append(rowEl({icon:'▤',name:k,meta:g[k].length,key:id+k,open:!!q,kids:()=>g[k].map(mkr)})))}
+const KN={class:'Classes',fn:'Functions',iife:'IIFE blocks',method:'Methods',setter:'Setters',getter:'Getters'},KO=Object.keys(KN);
+const MR={method:0,setter:1,getter:2};
+function rFns(){const q=$('#fq').value.trim().toLowerCase(),ms={};
+ R.fns.forEach(f=>{if(f.p!=null)(ms[f.p]=ms[f.p]||[]).push(f)});
+ const hit=f=>!q||f.name.toLowerCase().includes(q);
+ const items=R.fns.filter(f=>f.p==null&&(hit(f)||(ms[f.id]||[]).some(hit))).sort((a,b)=>KO.indexOf(a.kind)-KO.indexOf(b.kind));
+ const foc=f=>[['◎',()=>focus(f.a,f.b),'Focus edit'],['✎',()=>blockEdit(f.a,f.b,f.name),'Edit this block on its own']];
+ const leaf=f=>rowEl({icon:IC[f.kind],name:f.name,meta:'L'+ln(f.a),go:()=>go(f.a),acts:foc(f)});
+ grp('#fl',items,f=>f.kind=='class'?'Classes':f.kind=='fn'?'Functions':f.kind=='iife'?'IIFE blocks':'Methods',q,f=>{
+  const k=(ms[f.id]||[]).slice().sort((a,b)=>(MR[a.kind]||0)-(MR[b.kind]||0)||a.a-b.a);
+  if(!k.length)return leaf(f);
+  return rowEl({icon:IC.class,name:f.name,meta:'L'+ln(f.a)+' · '+k.length,key:'cls'+f.name,open:!!q,go:()=>go(f.a),acts:foc(f),kids:()=>k.map(leaf)})},()=>true)}
+function rVars(){grp('#vl',R.vars,v=>v.s,$('#vq').value,v=>rowEl({icon:IC[v.k],name:v.name,meta:'L'+ln(v.a),go:()=>go(v.a)}))}
+/* every const in the file, flat and in source order; side text is the innermost class/function it sits in */
+function rConsts(){const el=$('#cl'),q=$('#cq').value.trim().toLowerCase(),sc=v=>{const a=(v.s||'').split(' › ');return a[a.length-1]||'(top level)'};
+ const L=R.vars.filter(v=>v.k=='c'&&(!q||v.name.toLowerCase().includes(q)||(v.s||'').toLowerCase().includes(q))).sort((a,b)=>a.a-b.a);
+ el.textContent='';if(!L.length){el.innerHTML='<p class="e">'+(q?'Nothing found':'No constants in this file')+'</p>';return}
+ L.forEach(v=>{const r=rowEl({icon:IC.c,name:v.name,meta:sc(v)+' · L'+ln(v.a),go:()=>go(v.a)}),m=r.querySelector('em');
+  m.style.cssText='max-width:50%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';m.title=v.s||'';el.append(r)})}
+$('#fq').oninput=rFns;$('#vq').oninput=rVars;$('#cq').oninput=rConsts;
+function crumb(){const i=cm.indexFromPos(cm.getCursor()),out=[];let list=R.scripts.some(x=>i>=x.a&&i<=x.b)?R.scripts:R.styles;
+ for(;;){const n=list.find(x=>i>=x.a&&i<=x.b);if(!n)break;out.push(n);list=n.c||[]}
+ const c=$('#crumb');c.textContent='';out.forEach((n,k)=>{if(k)c.append(' › ');const s=document.createElement('span');s.textContent=n.name;s.onclick=()=>go(n.a);c.append(s)})}
+cm.on('cursorActivity',()=>{const c=cm.getCursor(),s=cm.getSelection().length;$('#pos').textContent='Ln '+(c.line+1)+', Col '+(c.ch+1)+(s?' ('+s+' sel)':'');cancelAnimationFrame(cm._r);cm._r=requestAnimationFrame(crumb)});
+/* ---------- worker I/O ---------- */
+function parse(){W.postMessage({t:'parse',id:++seq,text:cm.getValue(),js:/\.js$/i.test(cF().name),css:/\.css$/i.test(cF().name)})}
+W.onmessage=e=>{const d=e.data;if(d.t=='parse'){if(d.id!=seq)return;R=d.r;rTree();rFns();rVars();rConsts();crumb()}else if(d.id==sq)rFind(d.r)};
+cm.on('change',()=>{clearTimeout(TM);TM=setTimeout(()=>{flush();persist();parse()},300)});
+/* ---------- search ---------- */
+function doFind(){const q=$('#q').value;if(!q){$('#fr').textContent='';return}flush();
+ const fs=$('#all').checked?cP().files:[cF()];
+ W.postMessage({t:'find',id:++sq,q,cs:$('#cs').checked,rx:$('#rx').checked,files:fs.map(f=>({id:f.id,name:f.name,text:f.id==S.f?cm.getValue():f.text}))})}
+let ST;$('#q').oninput=()=>{clearTimeout(ST);ST=setTimeout(doFind,180)};['#cs','#rx','#all'].forEach(s=>$(s).onchange=doFind);
+function rFind(d){LR=d.r||[];HI=-1;const c=$('#fr');c.textContent='';if(d.err){c.innerHTML='<p class="e">Invalid regular expression</p>';return}
+ if(!d.r.length){c.innerHTML='<p class="e">No matches</p>';return}
+ if(d.r.length>=500){const p=document.createElement('p');p.className='e';p.textContent='Showing first 500 matches';c.append(p)}
+ const g={};d.r.forEach(x=>(g[x.f]=g[x.f]||[]).push(x));
+ Object.keys(g).forEach(fid=>{const a=g[fid];c.append(rowEl({icon:'◧',name:a[0].n,meta:a.length,key:'F'+fid+$('#q').value,open:d.r.length<=40,kids:()=>a.map(x=>rowEl({name:x.t,hl:[x.o,x.len],meta:'L'+(x.l+1),go:()=>hit(x),acts:[['⇄',()=>replOne(x),'Replace this match']]}))}))})}
+function hit(x){unfocus();if(x.f!=S.f)openFile(S.p,x.f,true);const A={line:x.l,ch:x.c};cm.setSelection(A,{line:x.l,ch:x.c+x.len});cm.scrollIntoView({from:A,to:A},cm.getScrollInfo().clientHeight/3);flash(x.l);closeDrawer()}
+function openFind(){const s=cm.getSelection();if(s&&!s.includes('\n'))$('#q').value=s;side(true);tab('find');$('#q').focus();$('#q').select();doFind()}
+/* ---------- projects & files ---------- */
+function title(){$('#ttl').innerHTML='';const s=document.createElement('small');s.textContent=cP().name+' / ';$('#ttl').append(s,cF().name)}
+function openFile(pid,fid,skip){savePlace();flush();S.p=pid;S.f=fid;const f=cF();unfocus();
+ if(!docs[f.id])docs[f.id]=CodeMirror.Doc(f.text,mode(f.name));RS=true;cm.swapDoc(docs[f.id]);persist();title();parse();rFiles();aiProj();if($('#q').value)doFind();if(skip)RS=false;else restore(f.id)}
+async function newFile(p,dir){let n=await askText('New file name',(dir?dir+'/':'')+(p.files.length?'page'+(p.files.length+1):'index')+'.html');if(!n)return;n=n.trim().replace(/\\/g,'/').replace(/^\/+/,'');if(!n||n.endsWith('/'))return toast('Not a valid file name');if(dirsOf(p).has(n))return toast('A folder with that name already exists');const f={id:uid(),name:n,text:/\.js$/i.test(n)?'// '+n+'\n':/\.css$/i.test(n)?'/* '+n+' */\n':TPL};p.files.push(f);if(dir)openDirs(p,dir);openFile(p.id,f.id)}
+async function newProject(){const n=await askText('New project name','Untitled project');if(!n)return;const f={id:uid(),name:'index.html',text:TPL},p={id:uid(),name:n,files:[f]};S.ps.push(p);openFile(p.id,f.id);OPEN.add('P'+p.id);rFiles()}
+/* ---------- folders: explicit p.dirs (so empty folders survive) plus the folders implied by file paths ---------- */
+const fpath=f=>f.name.replace(/^\/+/,''),dname=x=>x.slice(0,Math.max(0,x.lastIndexOf('/'))),bname=x=>x.slice(x.lastIndexOf('/')+1);
+function dirsOf(p){const s=new Set();[...(p.dirs||[]),...p.files.map(f=>dname(fpath(f)))].forEach(d=>{const a=String(d).split('/').filter(Boolean);for(let i=1;i<=a.length;i++)s.add(a.slice(0,i).join('/'))});return s}
+function cleanDir(x){x=String(x||'').trim().replace(/\\/g,'/').replace(/\/{2,}/g,'/').replace(/^\/+|\/+$/g,'');if(!x)return'';const a=x.split('/');return a.some(t=>!t.trim()||t=='.'||t=='..')?'':x}
+const inDir=(p,d)=>p.files.filter(f=>fpath(f).startsWith(d+'/'));
+function openDirs(p,d){const a=d.split('/');for(let i=1;i<=a.length;i++)OPEN.add('D'+p.id+':'+a.slice(0,i).join('/'));OPEN.add('P'+p.id)}
+async function addDir(p,parent){const n=await askText('New folder name'+(parent?' in '+parent:''),'');if(!n)return;const d=cleanDir(parent?parent+'/'+n:n);if(!d)return toast('Not a valid folder name');
+ if(dirsOf(p).has(d))return toast('That folder already exists');if(p.files.some(f=>fpath(f)==d))return toast('A file with that name already exists');
+ (p.dirs=p.dirs||[]).push(d);openDirs(p,d);persist();rFiles();toast('Created '+d)}
+async function renameDir(p,d){const n=await askText('Rename or move folder',d);if(n==null||!n.trim())return;const nd=cleanDir(n);if(!nd)return toast('Not a valid folder name');if(nd==d)return;
+ if(nd.startsWith(d+'/'))return toast('A folder cannot be moved into itself');if(dirsOf(p).has(nd))return toast('That folder already exists');if(p.files.some(f=>fpath(f)==nd))return toast('A file with that name already exists');
+ const old=[...dirsOf(p)].filter(x=>x==d||x.startsWith(d+'/')),mv=x=>nd+x.slice(d.length);
+ p.files.forEach(f=>{const x=fpath(f);if(x.startsWith(d+'/'))f.name=mv(x)});
+ p.dirs=(p.dirs||[]).filter(x=>x!=d&&!x.startsWith(d+'/')).concat(old.map(mv));
+ [...OPEN].forEach(k=>{const m=k.match(/^D(.+?):(.*)$/);if(m&&m[1]==p.id&&(m[2]==d||m[2].startsWith(d+'/'))){OPEN.delete(k);OPEN.add('D'+p.id+':'+mv(m[2]))}});
+ openDirs(p,nd);persist();rFiles();title()}
+async function delDir(p,d){const fs=inDir(p,d),sub=[...dirsOf(p)].filter(x=>x.startsWith(d+'/')).length;
+ if(fs.length&&fs.length>=p.files.length)return toast('A project needs at least one file');
+ if(!await sure('Delete the folder '+d+(fs.length?' and the '+fs.length+' file'+(fs.length>1?'s':'')+' in it':'')+(sub?' ('+sub+' subfolder'+(sub>1?'s':'')+')':'')+'? This cannot be undone.','Delete',1,'Delete folder?'))return;
+ const gone=fs.some(f=>f.id==S.f);fs.forEach(f=>delete docs[f.id]);p.files=p.files.filter(f=>!fs.includes(f));
+ p.dirs=(p.dirs||[]).filter(x=>x!=d&&!x.startsWith(d+'/'));
+ if(gone)openFile(p.id,p.files[0].id);else{persist();rFiles()}}
+async function delFile(p,f){if(p.files.length<2)return toast('A project needs at least one file');if(!await sure('Delete '+f.name+'? This cannot be undone.','Delete',1,'Delete file?'))return;
+ p.files=p.files.filter(x=>x!==f);delete docs[f.id];if(f.id==S.f)openFile(p.id,p.files[0].id);else{persist();rFiles()}}
+async function delProj(p){if(S.ps.length<2)return toast('Keep at least one project');if(!await sure('Delete the project "'+p.name+'" and all of its files? This cannot be undone.','Delete',1,'Delete project?'))return;
+ p.files.forEach(f=>delete docs[f.id]);S.ps=S.ps.filter(x=>x!==p);if(p.id==S.p){const q=S.ps[0];openFile(q.id,q.files[0].id)}else{persist();rFiles()}}
+function dl(n,t){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:'text/plain'}));a.download=n.split('/').pop();a.click();setTimeout(()=>URL.revokeObjectURL(a.href),999)}
+function fileRow(p,f){return rowEl({icon:'◧',name:bname(fpath(f)),meta:f.id==S.f?'●':'',go:()=>{openFile(p.id,f.id);closeDrawer()},
+   acts:[['✎',async()=>{const n=await askText('Rename or move file',f.name);if(n){f.name=n.trim().replace(/\\/g,'/').replace(/^\/+/,'')||f.name;persist();rFiles();title()}},'Rename'],
+    ['⎘',()=>{flush();const g={id:uid(),name:f.name.replace(/(\.\w+)?$/,'-copy$1'),text:f.text};p.files.push(g);openFile(p.id,g.id)},'Duplicate'],
+    ['⇩',()=>{flush();dl(f.name,f.text)},'Download'],['✕',()=>delFile(p,f),'Delete']]})}
+function treeKids(p,dir){const D=dirsOf(p),ds=[...D].filter(d=>dname(d)==dir).sort((a,b)=>a.toLowerCase()<b.toLowerCase()?-1:1),fs=p.files.filter(f=>dname(fpath(f))==dir),out=[];
+ ds.forEach(d=>out.push(rowEl({icon:'▤',name:bname(d),meta:inDir(p,d).length,key:'D'+p.id+':'+d,
+  acts:[['+',()=>newFile(p,d),'New file here'],['⊞',()=>addDir(p,d),'New subfolder'],['✎',()=>renameDir(p,d),'Rename or move'],['✕',()=>delDir(p,d),'Delete folder']],
+  kids:()=>{const k=treeKids(p,d);if(!k.length){const e=document.createElement('div');e.className='r';e.style.cssText='opacity:.5;cursor:default;padding-left:26px';e.textContent='(empty)';k.push(e)}return k}})));
+ fs.forEach(f=>out.push(fileRow(p,f)));return out}
+function rFiles(){const c=$('#pl');c.textContent='';
+ S.ps.forEach(p=>c.append(rowEl({icon:'▣',name:p.name,meta:p.files.length,key:'P'+p.id,
+  acts:[['+',()=>newFile(p),'New file'],['⊞',()=>addDir(p,''),'New folder'],['✎',async()=>{const n=await askText('Rename project',p.name);if(n){p.name=n;persist();rFiles();title()}},'Rename'],
+   ['⇩',()=>{flush();dl(p.name.replace(/\.tenon$/i,'')+'.tenon',JSON.stringify({name:p.name,files:p.files.map(({name,text})=>({name,text})),dirs:p.dirs||[]}))},'Export project'],['✕',()=>delProj(p),'Delete']],
+  kids:()=>treeKids(p,'')})))}
+$('#nD').onclick=()=>addDir(cP(),'');
+$('#nP').onclick=newProject;$('#nF').onclick=()=>newFile(cP());$('#iM').onclick=()=>$('#imp').click();
+$('#imp').onchange=async e=>{for(const f of e.target.files){const t=await f.text();
+ if(/\.tenon$/i.test(f.name)||(/\.json$/i.test(f.name)&&/"files"\s*:/.test(t.slice(0,2000)))){try{const j=JSON.parse(t);S.ps.push({id:uid(),name:j.name||f.name.replace(/\.(tenon|json)$/i,''),files:j.files.map(x=>({id:uid(),name:x.name,text:x.text})),dirs:(Array.isArray(j.dirs)?j.dirs:[]).map(cleanDir).filter(Boolean)})}catch(x){toast('Not a project file')}}
+ else cP().files.push({id:uid(),name:f.name,text:t})}
+ e.target.value='';persist();rFiles();toast('Imported')};
+/* ---------- panels ---------- */
+const TABS=[['tree','Structure'],['fns','Functions'],['vars','Variables'],['consts','Constants'],['find','Find'],['files','Projects']];
+TABS.forEach(([k,l])=>{const b=document.createElement('button');b.id='t-'+k;b.textContent=l;b.onclick=()=>tab(k);$('#tabs').append(b)});
+function tab(n){TABS.forEach(([k])=>{$('#p-'+k).classList.toggle('on',k==n);$('#t-'+k).classList.toggle('on',k==n)});sv()}
+function side(o){const b=document.body,m=innerWidth<=820;if(o===undefined)o=m?!b.classList.contains('open'):b.classList.contains('hide');
+ if(m)b.classList.toggle('open',o);else b.classList.toggle('hide',!o);setTimeout(()=>cm.refresh(),220);sv()}
+$('#bMenu').onclick=()=>side();$('#veil').onclick=()=>side(false);$('#ttl').onclick=()=>{side(true);tab('files')};
+$('#bUn').onclick=()=>cm.undo();$('#bRe').onclick=()=>cm.redo();$('#bFind').onclick=openFind;
+/* ---------- run preview ---------- */
+const HOOK='<script>(function(){function s(t,a){parent.postMessage({forge:t,m:[].map.call(a,function(x){try{return typeof x=="object"?JSON.stringify(x):String(x)}catch(e){return String(x)}}).join(" ")},"*")}["log","warn","error"].forEach(function(k){var o=console[k];console[k]=function(){s(k,arguments);o.apply(console,arguments)}});onerror=function(m,u,l){s("error",[m+" (line "+l+")"])};addEventListener("unhandledrejection",function(e){s("error",["Unhandled rejection: "+(e.reason&&e.reason.message||e.reason)])})})()<\/script>';
+function resolve(ref,from){const r=ref.split(/[?#]/)[0];if(!r||/^([a-z][\w+.-]*:|\/\/)/i.test(r))return;
+ const dir=from.includes('/')?from.slice(0,from.lastIndexOf('/')):'',out=[];
+ (r[0]=='/'?r.slice(1):(dir?dir+'/':'')+r).split('/').forEach(p=>{if(p=='..')out.pop();else if(p&&p!='.')out.push(p)});
+ const full=out.join('/'),fs=cP().files,b=out[out.length-1],m=fs.filter(f=>f.name.split('/').pop()==b);
+ return fs.find(f=>f.name==full)||(m.length==1?m[0]:undefined)}
+function inl(h,from){const g=r=>resolve(r,from);
+ h=h.replace(/<script\b([^>]*?)\ssrc\s*=\s*["']([^"']+)["']([^>]*)>\s*<\/script>/gi,(m,a,s,b)=>{const f=g(s);return f?'<script'+a+b+'>'+f.text.replace(/<\/script/gi,'<\\/script')+'<\/script>':m});
+ return h.replace(/<link\b[^>]*?href\s*=\s*["']([^"']+)["'][^>]*>/gi,(m,s)=>{const f=/stylesheet/i.test(m)&&g(s);return f?'<style>'+f.text+'</style>':m})}
+function run(){flush();let f=cF();
+ if(!/\.html?$/i.test(f.name)){const b=f.name.split('/').pop(),e=cP().files.find(x=>/\.html?$/i.test(x.name)&&x.text.includes(b));if(e){f=e;toast('Running '+e.name)}}
+ let h=f.text;
+ if(/\.js$/i.test(f.name))h='<script>'+h+'<\/script>';
+ else if(/\.css$/i.test(f.name))h='<style>'+h+'</style><p style="font:14px system-ui;padding:1rem">No HTML file in this project links this stylesheet.</p>';
+ else h=inl(h,f.name);
+ h=/<head[^>]*>/i.test(h)?h.replace(/<head[^>]*>/i,m=>m+HOOK):HOOK+h;
+ const full=S.full!==false,fr=$('#fr2');$('#fa').checked=full;
+ fr.setAttribute('sandbox','allow-scripts allow-modals allow-forms allow-popups allow-downloads'+(full?' allow-same-origin':''));
+ $('#con').textContent='';fr.srcdoc=h;$('#run').hidden=false}
+async function inspect(){const c=$('#con'),p=t=>{const d=document.createElement('div');d.textContent=t;c.append(d);c.scrollTop=1e9};
+ p('— Storage (shared origin) —');
+ try{const dbs=(indexedDB.databases?await indexedDB.databases():[]).filter(d=>d.name!='forge-editor');if(!dbs.length)p('IndexedDB: none');
+  for(const d of dbs)await new Promise(res=>{const r=indexedDB.open(d.name);r.onerror=res;r.onsuccess=()=>{const db=r.result,ns=[...db.objectStoreNames];
+   if(!ns.length){p('IDB '+d.name+' v'+db.version+': no stores');db.close();return res()}
+   const tx=db.transaction(ns),out=[];let n=ns.length;ns.forEach(s=>{const q=tx.objectStore(s).count();q.onsuccess=()=>{out.push(s+' ('+q.result+')');if(!--n){p('IDB '+d.name+' v'+db.version+': '+out.join(', '));db.close();res()}}})}})
+ }catch(e){p('IndexedDB error: '+e.message)}
+ const ks=Object.keys(localStorage).filter(k=>k!='forge1');p('localStorage: '+(ks.length?ks.join(', '):'empty'))}
+async function resetData(){if(!await sure('This deletes the IndexedDB databases and localStorage keys your previews created. Your Tenon projects are kept.','Reset data',1,'Reset preview data?'))return;
+ $('#fr2').srcdoc='';await new Promise(r=>setTimeout(r,200));
+ try{(indexedDB.databases?await indexedDB.databases():[]).forEach(d=>{if(d.name!='forge-editor')indexedDB.deleteDatabase(d.name)})}catch(e){}
+ Object.keys(localStorage).forEach(k=>{if(k!='forge1')localStorage.removeItem(k)});sessionStorage.clear();toast('Preview data cleared');setTimeout(run,300)}
+$('#fa').onchange=e=>{S.full=e.target.checked;persist();run()};$('#rSt').onclick=inspect;$('#rRs').onclick=resetData;$('#rRl').onclick=run;
+addEventListener('message',e=>{if(e.data&&e.data.forge){const d=document.createElement('div');d.className=e.data.forge;d.textContent=e.data.m;$('#con').append(d);$('#con').scrollTop=1e9}});
+$('#bRun').onclick=run;$('#rx2').onclick=()=>{$('#run').hidden=true;$('#fr2').srcdoc=''};
+/* ---------- menu ---------- */
+let FS=13;const fs=d=>{FS=Math.max(8,Math.min(32,FS+d));cm.getWrapperElement().style.fontSize=FS+'px';cm.refresh();if(typeof sv=='function')sv()};
+$('#zmI').onclick=()=>fs(1);$('#zmO').onclick=()=>fs(-1);
+$('#zm').addEventListener('mousedown',e=>e.preventDefault());
+{/* pinch to zoom: two fingers on the editor scale the font size */
+const ed=$('#ed'),dist=t=>Math.hypot(t[0].clientX-t[1].clientX,t[0].clientY-t[1].clientY);let p0=0,f0=13;
+ed.addEventListener('touchstart',e=>{if(e.touches.length==2){p0=dist(e.touches);f0=FS}else p0=0},{passive:true});
+ed.addEventListener('touchmove',e=>{if(e.touches.length!=2||!p0)return;e.preventDefault();
+ const n=Math.round(f0*dist(e.touches)/p0);if(n!=FS)fs(n-FS)},{passive:false});
+const end=e=>{if(e.touches.length<2)p0=0};ed.addEventListener('touchend',end,{passive:true});ed.addEventListener('touchcancel',end,{passive:true})}
+const MENU=[['Fold all',()=>cm.execCommand('foldAll')],['Unfold all',()=>cm.execCommand('unfoldAll')],['Toggle line wrap',()=>cm.setOption('lineWrapping',!cm.getOption('lineWrapping'))],
+ ['Font larger',()=>fs(1)],['Font smaller',()=>fs(-1)],['Toggle key bar',()=>{document.body.classList.toggle('kb');setTimeout(()=>cm.refresh(),50)}],
+ ['Exit focus edit',unfocus],['Download this file',()=>{flush();dl(cF().name,cF().text)}]];
+MENU.forEach(([l,f])=>{const b=document.createElement('button');b.textContent=l;b.onclick=()=>{$('#menu').hidden=true;f()};$('#menu').append(b)});
+$('#bMore').onclick=e=>{e.stopPropagation();$('#menu').hidden=!$('#menu').hidden};document.addEventListener('click',()=>{$('#menu').hidden=true});
+/* ---------- mobile key bar ---------- */
+const PAIR=new Set(['{}','()','[]',"''",'""','<>']);
+[['⇥',()=>cm.replaceSelection('  ')],['←','goCharLeft'],['→','goCharRight'],['↑','goLineUp'],['↓','goLineDown'],['{}'],['()'],['[]'],["''"],['""'],['`'],['=>'],['='],[';'],['.'],[','],[':'],['$'],['/'],['!'],['&&'],['||'],['<>'],['</'],['//','toggleComment'],['⌫ln','deleteLine'],['↶','undo'],['↷','redo']]
+.forEach(([l,a])=>{const b=document.createElement('button');b.textContent=l;b.addEventListener('mousedown',e=>e.preventDefault());
+ b.onclick=()=>{if(typeof a=='function')a();else if(a)cm.execCommand(a);else{cm.replaceSelection(l);if(PAIR.has(l))cm.execCommand('goCharLeft')}cm.focus()};$('#kb').append(b)});
+/* ---------- editor state in IndexedDB (db "forge-editor") ---------- */
+let RS=false,SVT;
+const DB=new Promise(res=>{try{const r=indexedDB.open('forge-editor',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>res(null);r.onblocked=()=>res(null)}catch(e){res(null)}});
+const kvGet=async k=>{const db=await DB;return db?new Promise(r=>{try{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>r(q.result);q.onerror=()=>r()}catch(e){r()}}):undefined};
+const kvSet=async(k,v)=>{const db=await DB;if(db)try{db.transaction('kv','readwrite').objectStore('kv').put(v,k)}catch(e){}};
+function sv(){if(RS)return;clearTimeout(SVT);SVT=setTimeout(saveNow,400)}
+function savePlace(){const f=cF();if(!f||!docs[f.id]||RS)return;const s=cm.getScrollInfo(),folds=[];
+ cm.getAllMarks().forEach(m=>{if(m.__isFold){const r=m.find();if(r&&r.from)folds.push(r.from.line)}});
+ let focus=null;if(fm.length){const b=fm.find(m=>m.__k=='b'),a=fm.find(m=>m.__k=='a'),bf=b&&b.find(),af=a&&a.find();focus=[bf?bf.to.line:0,af?af.from.line:cm.lastLine()]}
+ kvSet('place:'+f.id,{a:cm.getCursor('anchor'),h:cm.getCursor('head'),sl:s.left,st:s.top,folds,focus,t:Date.now()})}
+function saveNow(){if(RS)return;savePlace();const p=$('.pn.on');
+ kvSet('ui',{tab:p?p.id.slice(2):'tree',hide:document.body.classList.contains('hide'),kb:document.body.classList.contains('kb'),fs:FS,wrap:cm.getOption('lineWrapping'),open:[...OPEN].slice(0,400)})}
+async function restore(id){const p=await kvGet('place:'+id);if(S.f!=id)return;if(!p){RS=false;return}
+ try{const L=n=>Math.max(0,Math.min(n,cm.lastLine())),P=x=>{const l=L(x.line);return{line:l,ch:Math.min(x.ch,cm.getLine(l).length)}};
+  (p.folds||[]).slice().sort((x,y)=>x-y).forEach(l=>{try{cm.foldCode({line:L(l),ch:0},null,'fold')}catch(e){}});
+  if(p.focus){const l1=L(p.focus[0]),l2=L(p.focus[1]);focus(cm.indexFromPos({line:l1,ch:0}),cm.indexFromPos({line:l2,ch:cm.getLine(l2).length}))}
+  cm.setSelection(P(p.a),P(p.h),{scroll:false});cm.refresh();cm.scrollTo(p.sl,p.st);toast('Back at line '+(P(p.h).line+1))}catch(e){}
+ requestAnimationFrame(()=>{try{cm.scrollTo(p.sl,p.st)}catch(e){}RS=false;sv()})}
+cm.on('cursorActivity',sv);cm.on('scroll',sv);cm.on('fold',sv);cm.on('unfold',sv);
+document.addEventListener('visibilitychange',()=>{if(document.hidden){flush();persist();saveNow()}});
+/* ---------- Assistant: local model imported from this device + tool loop ---------- */
+const GPU=!!navigator.gpu,DEF={model:'',device:GPU?'webgpu':'wasm',dtype:GPU?'q4f16':'q8',max:512,temp:0.2,prov:'local',mode:'code'};
+let CFG={...DEF},LOG=[],aiPid,aiW,aiReady=false,aiBusy=false,aiStopF=false,aiRej=null,MSG=[],rep=0,cnt=0,wq=0;
+const ID=new Map(),BY={},SEEN={};
+const kvPutW=async(k,v)=>{const db=await DB;if(!db)throw new Error('IndexedDB unavailable');return new Promise((ok,no)=>{const t=db.transaction('kv','readwrite');t.objectStore('kv').put(v,k);t.oncomplete=ok;t.onerror=t.onabort=()=>no(t.error)})};
+const aiSt=m=>$('#aiSt').textContent=m,aiSave=()=>kvSet('ai:'+aiPid,LOG.slice(-80)),cfgSave=()=>kvSet('aicfg:'+aiPid,CFG),scr=()=>{const L=$('#aiLog');L.scrollTop=L.scrollHeight};
+/* provider interface: load(cfg,files,onProgress) chat(msgs,cfg,onToken)->text stop() */
+const mkW=m=>new Worker(URL.createObjectURL(new Blob([$('#aiwk').textContent],{type:'text/javascript'})),m?{type:'module'}:{});   // module first; classic fallback (module workers fail from file:// pages)
+const PROV={
+ local:{load(c,files,on){const go=m=>new Promise((ok,no)=>{if(aiW)aiW.terminate();aiW=mkW(m);aiW.onmessage=e=>{const d=e.data;if(d.t=='prog')on(d);else if(d.t=='ready')ok(d);else if(d.t=='err')no(new Error(d.m))};
+   aiW.onerror=e=>{e.preventDefault();no(Object.assign(new Error(e.message||'worker script failed to start'),{blank:!e.message}))};aiW.postMessage({t:'load',c,files})});
+  return go(1).catch(e=>e.blank?go(0):Promise.reject(e))},
+  chat(m,c,on){return new Promise((ok,no)=>{aiRej=no;aiW.onerror=e=>{e.preventDefault&&e.preventDefault();aiReady=false;no(new Error('The model worker crashed'+(e.message?' ('+e.message+')':'')+'. That is usually out of memory: clear the chat, or use a smaller model or dtype, then send again to reload it.'))};aiW.onmessageerror=()=>{aiReady=false;no(new Error('The model worker sent an unreadable message'))};aiW.onmessage=e=>{const d=e.data;if(d.t=='tok')on(d.s);else if(d.t=='done')ok(d.text);else if(d.t=='err')no(new Error(d.m))};aiW.postMessage({t:'gen',msgs:m,c})})},
+  stop(){aiW&&aiW.postMessage({t:'stop'})}},
+ openai:{/* stub: later POST {base}/v1/chat/completions (Ollama etc.) with stream:true, same three methods */
+  load(){throw new Error('OpenAI-compatible provider not implemented yet')},chat(){throw new Error('OpenAI-compatible provider not implemented yet')},stop(){}}};
+/* settings + per-project state */
+async function aiUI(){const ix=(await kvGet('mdls'))||[],s=$('#aiM');s.innerHTML='';if(!ix.length)s.add(new Option('(none imported)',''));ix.forEach(n=>s.add(new Option(n,n)));
+ s.value=CFG.model;$('#aiDv').value=CFG.device;$('#aiDt').value=CFG.dtype;$('#aiMx').value=CFG.max;$('#aiTp').value=CFG.temp;$('#aiWarn').hidden=GPU;aiMode()}
+async function aiProj(){if(aiPid==S.p)return;aiPid=S.p;MSG=[];rep=0;LOG=(await kvGet('ai:'+S.p))||[];CFG={...DEF,...((await kvGet('aicfg:'+S.p))||{})};
+ if(!CFG.model){const ix=await kvGet('mdls');if(ix&&ix[0])CFG.model=ix[0]}$('#aiLog').textContent='';LOG.forEach(draw);aiUI();scr()}
+[['#aiM','model'],['#aiDv','device'],['#aiDt','dtype'],['#aiMx','max',1],['#aiTp','temp',1]].forEach(([s,k,n])=>$(s).onchange=e=>{CFG[k]=n?+e.target.value:e.target.value;if(!n)aiReady=false;cfgSave()});
+/* import model files from the device */
+async function aiImport(fl,dir){fl=[...fl];if(!fl.length)return;
+ const fx=n=>n.replace(/(\.(?:json|jinja|onnx|onnx_data))\.txt$/i,'$1').replace(/ \(\d+\)(?=\.[^.\/]+$)/,'');   // Android adds .txt / (1) to some downloads
+ const rel=f=>fx(dir?f.webkitRelativePath.split('/').slice(1).join('/'):(/\.onnx/.test(f.name)?'onnx/':'')+f.name);
+ const all=fl.map(f=>[rel(f),f]).filter(([r])=>r&&!/^\.git|readme/i.test(r));
+ const sf=r=>{const m=r.match(/(?:^|\/)model(_[a-z0-9]+)?\.onnx/);return m?m[1]==null?'fp32':m[1]=='_quantized'?'q8':m[1].slice(1):null};
+ const have=[...new Set(all.map(([r])=>sf(r)).filter(Boolean))];if(!have.length)return toast('No onnx/model_*.onnx found in that selection');
+ const use=have.includes(CFG.dtype)?CFG.dtype:['q4f16','q4','q8','fp16','fp32'].find(x=>have.includes(x))||have[0];
+ const files=all.filter(([r])=>{const s=sf(r);return s==null?!/\.onnx/.test(r):s==use});   // keep one ONNX variant to save space
+ let fell=0;const has=n=>files.find(([r])=>r==n);
+ if(!has('tokenizer_config.json')&&has('tokenizer.json')&&has('config.json'))try{if(/^qwen/.test(JSON.parse(await has('config.json')[1].text()).model_type||'')){const ct=has('chat_template.jinja');
+  files.push(['tokenizer_config.json',new Blob([JSON.stringify({tokenizer_class:'Qwen2Tokenizer',eos_token:'<|im_end|>',pad_token:'<|endoftext|>',clean_up_tokenization_spaces:false,model_max_length:40960,...(ct?{chat_template:await ct[1].text()}:{})})],{type:'application/json'})]);fell=1}}catch(e){}
+ const miss=['config.json','tokenizer.json','tokenizer_config.json'].filter(n=>!has(n));
+ if(miss.length)return aiSt('Not imported — missing: '+miss.join(', ')+'. Select all model files together (got '+files.map(x=>x[0]).join(', ')+').');
+ const nm=await askText('Name this model',dir?fl[0].webkitRelativePath.split('/')[0]:'my-model');if(!nm)return;aiSt('Saving '+files.length+' files to this browser…');
+ try{await kvPutW('mdl:'+nm,{files});const ix=(await kvGet('mdls'))||[];if(!ix.includes(nm))ix.push(nm);await kvPutW('mdls',ix);
+  CFG.model=nm;CFG.dtype=use;aiReady=false;cfgSave();aiUI();aiSt('Imported "'+nm+'" ('+use+').'+(fell?' tokenizer_config.json was missing, so a Qwen one was generated.':'')+' Tap Load.')}catch(e){aiSt('Save failed (storage full?): '+e.message)}}
+$('#aiImD').onclick=()=>$('#aiFd').click();$('#aiImF').onclick=()=>$('#aiFm').click();
+$('#aiFd').onchange=e=>{aiImport(e.target.files,1);e.target.value=''};$('#aiFm').onchange=e=>{aiImport(e.target.files,0);e.target.value=''};
+$('#aiRm').onclick=async()=>{const m=CFG.model;if(!m||!await sure('Remove the imported model "'+m+'" from browser storage?','Remove',1))return;await kvPutW('mdl:'+m,null);
+ await kvPutW('mdls',((await kvGet('mdls'))||[]).filter(x=>x!=m));CFG.model='';aiReady=false;cfgSave();aiUI();aiSt('Model removed')};
+async function aiLoadM(){if(!CFG.model)return aiSt('Import a model first');const m=await kvGet('mdl:'+CFG.model);if(!m)return aiSt('Model files missing — import again');
+ aiSt(GPU?'Loading…':'Loading on CPU (slow)…');$('#aiPg').value=0;
+ try{const r=await PROV[CFG.prov].load(CFG,m.files,d=>{$('#aiPg').value=d.p;aiSt(d.s)});aiReady=true;$('#aiPg').value=1;aiSt('Ready · '+r.dev+' · '+r.dtype)}catch(e){aiReady=false;aiSt('Load failed: '+e.message)}}
+$('#aiLd').onclick=aiLoadM;
+/* tools (run locally) */
+let wid=0;const wreq=(msg,f)=>new Promise(res=>{const id='ai'+(++wid),h=e=>{if(e.data.id==id){W.removeEventListener('message',h);res(e.data.r)}};W.addEventListener('message',h);W.postMessage({...msg,id});});
+const wfind=o=>{flush();return wreq({t:'find',...o,files:cP().files.map(f=>({id:f.id,name:f.name,text:f.id==S.f?cm.getValue():f.text}))})};
+const wparse=()=>wreq({t:'parse',text:cm.getValue(),js:/\.js$/i.test(cF().name),css:/\.css$/i.test(cF().name)});
+let CX={f:null};   // file the read tools look at (null = the file open in the editor)
+const ctx=()=>{if(CX.f&&CX.f!=S.f&&cP().files.some(f=>f.id==CX.f))return CX;CX={f:null};flush();return{f:S.f,text:cm.getValue(),R}};
+let LX={t:null,s:null};const lines=t=>{if(LX.t!==t){const s=[0];for(let i=t.indexOf('\n');i>=0;i=t.indexOf('\n',i+1))s.push(i+1);LX={t,s}}return LX.s};   // line-start offsets, cached per text
+const lnOf=(c,a)=>{const s=lines(c.text);let lo=0,hi=s.length-1;while(lo<hi){const m=(lo+hi+1)>>1;if(s[m]<=a)lo=m;else hi=m-1}return lo+1},offOf=(c,l,ch)=>lines(c.text)[l]+ch;
+const rng=a=>{const m=/(\d+)\D+(\d+)|(\d+)/.exec(a||'');if(!m)return null;const x=+(m[1]||m[3]),y=m[2]?+m[2]:x+39;return y<x?[y,x]:[x,y]};
+const unNum=t=>{const L=t.split('\n');return L.filter(x=>x.trim()).every(x=>/^\s*\d+│ ?/.test(x))?L.map(x=>x.replace(/^\s*\d+│ ?/,'')).join('\n'):t};   // model copied the line-number gutter: strip it
+const STEPS=8,MAXR=60;
+const idOf=n=>ID.get(n)||(ID.set(n,'b'+(++cnt)),BY['b'+cnt]=n,'b'+cnt);
+const encl=(c,i)=>{let l=[...c.R.scripts,...c.R.styles],b='';for(;;){const n=l.find(x=>i>=x.a&&i<=x.b);if(!n)return b;b=idOf(n);l=n.c||[]}};
+const hits=(r,n,c)=>{const a=(r&&r.r)||[];return a.slice(0,n).map(x=>{const b=x.f==c.f?encl(c,offOf(c,x.l,x.c)):'';return x.n+':L'+(x.l+1)+' '+x.t.trim()+(b?'  ['+b+']':'')}).join('\n')+(a.length>n?'\n(+'+(a.length-n)+' more)':'')||'no hits'};
+/* symbol index: the parser's already-split functions, classes, methods, CSS rules, top-level vars and ids, searchable by NAME (small models are bad at ids) */
+const IXC=new WeakMap(),symIx=c=>{const R=c.R;if(IXC.has(R))return IXC.get(R);const o=[],w=n=>{if(n.kind!='cb')o.push(n);(n.c||[]).forEach(w)};
+ [...R.scripts,...R.styles].forEach(n=>(n.c||[]).forEach(w));
+ (R.vars||[]).forEach(v=>{if(!/ › /.test(v.s||''))o.push({kind:'var',name:v.name,a:v.a,b:0,sc:v.s,vk:v.k})});(R.els||[]).forEach(e=>o.push(e));IXC.set(R,o);return o};
+const symFind=(c,q)=>{q=(q||'').trim().replace(/^["'`]|["'`]$/g,'').replace(/\(\)$/,'');let at=0;const m=/^(.*)@L?(\d+)$/.exec(q);if(m){q=m[1];at=+m[2]}
+ const ix=symIx(c),lq=q.toLowerCase(),last=lq.split('.').pop(),nm=n=>n.name.toLowerCase().replace(/^static /,'');
+ let hit=ix.filter(n=>nm(n)==lq||nm(n)==last);if(at)hit=hit.filter(n=>lnOf(c,n.a)==at);
+ const nv=hit.filter(n=>n.kind!='var'&&n.kind!='el');if(nv.length)hit=nv;
+ return{hit,near:hit.length||!last?[]:ix.filter(n=>nm(n).includes(last)).slice(0,6)}};
+const symRow=(c,n)=>n.kind+' '+n.name+(n.b>n.a?' L'+lnOf(c,n.a)+'-'+lnOf(c,n.b):' L'+lnOf(c,n.a));
+const TOOLS={
+ list_files(){flush();return cP().files.map(f=>f.name+' ('+f.text.length+' chars)').join('\n')},
+ async open_file(n){const q=n.toLowerCase(),f=cP().files.find(x=>x.name.toLowerCase()==q)||cP().files.find(x=>x.name.toLowerCase().endsWith('/'+q));if(!f)return'no such file; call list_files';
+  if(f.id==S.f)CX={f:null};else{flush();CX={f:f.id,text:f.text,R:await wreq({t:'parse',text:f.text,js:/\.js$/i.test(f.name),css:/\.css$/i.test(f.name)})}}
+  return'Viewing '+f.name+'\n'+TOOLS.outline('')},
+ outline(a){const c=ctx();let id=(a||'').trim(),pg=1;const m=/^(\w*)\s*[, ]\s*(\d+)$/.exec(id);if(m){id=m[1];pg=+m[2]}if(/^(all|root)$/i.test(id))id='';
+  const l=id?(BY[id]||{}).c:[...c.R.scripts,...c.R.styles,...c.R.els];if(!l)return'unknown id or no children';
+  const g=fl=>{const o=[],f=(n,d)=>{const inl=fl&&!id&&d<1,b=n.b>n.a?'-'+lnOf(c,n.b):'';o.push('  '.repeat(d)+idOf(n)+' '+n.kind+' '+n.name+' L'+lnOf(c,n.a)+b+(n.c&&n.c.length&&!inl?' +'+n.c.length:''));if(inl)(n.c||[]).forEach(x=>f(x,d+1))};l.forEach(n=>f(n,0));return o};
+  const N=35;let o=g(1);if(!id&&o.length>N)o=g(0);   // big file: top level only, drill in with outline(id)
+  const pgs=Math.max(1,Math.ceil(o.length/N));pg=Math.min(Math.max(pg,1),pgs);
+  return(o.slice((pg-1)*N,pg*N).join('\n')||'(empty)')+(pgs>1?'\n(page '+pg+'/'+pgs+(pg<pgs?' — outline('+(id||'all')+','+(pg+1)+') for more':'')+')':'')},
+ async search(q){const c=ctx();return hits(await wfind({q,cs:false,rx:false}),8,c)},
+ async find_usages(n){const c=ctx();n=n.replace(/[^\w$]/g,'');return hits(await wfind({q:'\\b'+n+'\\b',cs:true,rx:true}),12,c)},
+ read_block(id){const c=ctx(),n=BY[id];if(!n)return'unknown id; call outline first';if(!(n.b>n.a))return'that item has no range; use read_lines(start,end) at its line number';const t=c.text.slice(n.a,n.b);SEEN[id]={a:n.a,b:n.b,t,f:c.f};
+  if(t.length<=2400)return t;return t.slice(0,2400)+'\n…(block is L'+lnOf(c,n.a)+'-'+lnOf(c,n.b)+', too big to show. '+(n.c&&n.c.length?'outline('+id+') lists its parts, or ':'')+'use read_lines(start,end) for a window of it)'},
+ replace_block(id,code){const s=SEEN[id];if(!s)return'call read_block('+id+') first';if(s.t.length>2400)return'block too big to replace whole; use read_lines(start,end) and replace_lines on just the lines that change';
+  let n=(code||'').replace(/^\s*\n/,'').trimEnd();if(!n)return'no code: put the full new block in a ``` fence after the CALL line';if(s.t==s.t.trimStart())n=n.trimStart();
+  return{prop:{f:s.f,a:s.a,b:s.b,old:s.t,new:n}}},
+ symbols(a){const c=ctx();let f=(a||'').trim(),pg=1;const m=/^(.*?)\s*,\s*(\d+)$/.exec(f);if(m){f=m[1];pg=+m[2]}f=f.replace(/^["'`]|["'`]$/g,'').toLowerCase();
+  const ix=symIx(c),rows=ix.filter(n=>f?n.name.toLowerCase().includes(f)||(n.sc||'').toLowerCase().includes(f):n.kind!='var'&&n.kind!='el'),N=30,pgs=Math.max(1,Math.ceil(rows.length/N));pg=Math.min(Math.max(pg,1),pgs);
+  const k={};ix.forEach(n=>k[n.kind]=(k[n.kind]||0)+1);
+  return(f?'':lines(c.text).length+' lines: '+Object.keys(k).map(x=>k[x]+' '+x).join(', ')+'. Give a filter word to narrow.\n')+(rows.slice((pg-1)*N,pg*N).map(n=>symRow(c,n)).join('\n')||'no symbol matches "'+f+'"; try search(text)')+(pgs>1?'\n(page '+pg+'/'+pgs+(pg<pgs?' — symbols('+f+','+(pg+1)+') for more':'')+')':'')},
+ read_symbol(a){const c=ctx(),{hit,near}=symFind(c,a);
+  if(!hit.length)return'no symbol "'+a+'"'+(near.length?'. Similar: '+near.map(n=>n.name+'@'+lnOf(c,n.a)).join(', '):'. Try symbols(word) or search(text)');
+  if(hit.length>1)return hit.length+' matches; repeat with name@line:\n'+hit.slice(0,8).map(n=>symRow(c,n)+'  → '+n.name+'@'+lnOf(c,n.a)).join('\n');
+  const n=hit[0],l=lnOf(c,n.a);if(!(n.b>n.a))return n.kind+' '+n.name+' is at L'+l+'. '+TOOLS.read_lines(l+','+(l+19));
+  return symRow(c,n)+'\n'+TOOLS.read_block(idOf(n))},
+ replace_symbol(a,code){const c=ctx(),h=symFind(c,a).hit.filter(n=>n.b>n.a);if(h.length!=1)return h.length?'several matches; repeat with name@line':'no symbol "'+a+'" with a body; use replace_lines(start,end)';
+  if(!SEEN[idOf(h[0])])return'call read_symbol('+a+') first';return TOOLS.replace_block(idOf(h[0]),code)},
+ read_lines(a){const c=ctx(),r=rng(a);if(!r)return'usage: read_lines(start,end)';const ls=lines(c.text),N=ls.length,want=Math.min(r[1],N);let s=Math.max(1,r[0]),e=s;
+  if(s>N)return'file has only '+N+' lines';const o=[];let len=0;
+  for(let i=s;i<=want&&i<s+60;i++){const row=i+'│ '+c.text.slice(ls[i-1],i<N?ls[i]-1:c.text.length);if(len+row.length>2400&&o.length)break;o.push(row);len+=row.length+1;e=i}
+  SEEN['L'+s+'-'+e]={ln:1,f:c.f,s,e};return o.join('\n')+(e<want?'\n…(stopped at L'+e+'; call read_lines('+(e+1)+','+want+') for more)':'')+(e==N?'\n(end of file, '+N+' lines)':'')},
+ replace_lines(a,code){const c=ctx(),r=rng(a);if(!r||!/\d\D+\d/.test(a||''))return'usage: replace_lines(start,end) then the new code in a ``` fence';const[s,e]=r;
+  if(!Object.values(SEEN).some(x=>x.ln&&x.f==c.f&&x.s<=s&&e<=x.e))return'call read_lines('+s+','+e+') first; you can only replace lines you have read';
+  if(e-s>=MAXR)return'range too big; replace '+MAXR+' lines or fewer per edit';
+  const n=unNum((code||'').replace(/^\s*\n/,'').trimEnd());if(!n)return'no code: put the full new lines in a ``` fence after the CALL line';
+  const ls=lines(c.text),N=ls.length,a1=ls[s-1],b1=e<N?ls[e]-1:c.text.length;
+  return{prop:{f:c.f,a:a1,b:b1,old:c.text.slice(a1,b1),new:n}}}};
+/* pre-retrieval (what a big model would spend steps on): rank symbols by the task, grep the distinctive words, pre-read the best match */
+const STOP=new Set('the and for with that this from into make add change fix use using when then have should would could please can you want need also just like all not are but was how what where why does let get set its our your file code new now still every each more less instead there here they them one two text function functions'.split(' '));
+const wordsOf=t=>{const w=new Set();for(const x of t.match(/[A-Za-z_$][\w$]{2,}/g)||[]){w.add(x.toLowerCase());x.replace(/([a-z0-9])([A-Z])/g,'$1 $2').split(/[_\s$]+/).forEach(y=>y.length>2&&w.add(y.toLowerCase()))}STOP.forEach(x=>w.delete(x));return w};
+async function brief(text){let hd='File open in editor: '+cF().name;
+ try{const c=ctx(),ix=symIx(c),qw=wordsOf(text),ex=new Set((text.match(/[A-Za-z_$][\w$]{2,}/g)||[]).map(x=>x.toLowerCase()).filter(x=>!STOP.has(x)));
+  hd+=' ('+lines(c.text).length+' lines, '+ix.filter(n=>n.kind!='var'&&n.kind!='el').length+' symbols)';
+  const fl=cP().files;if(fl.length>1)hd+='\nProject files: '+fl.slice(0,12).map(f=>f.name).join(', ');
+  const sc=[];for(const n of ix){if(n.kind=='el')continue;let x=ex.has(n.name.toLowerCase())?10:0;wordsOf(n.name).forEach(w=>{if(qw.has(w))x+=2});if(x)sc.push([x,n])}
+  sc.sort((a,b)=>b[0]-a[0]);const top=sc.slice(0,4),o=[hd];
+  if(top.length)o.push('Symbols matching your request (read_symbol(name) to read one):\n'+top.map(([x,n])=>'  '+symRow(c,n)).join('\n'));
+  const q=[...text.matchAll(/["'`“‘]([^"'`“”‘’\n]{3,40})["'`”’]/g)].map(m=>m[1]),named=new Set(top.map(x=>x[1].name.toLowerCase())),
+   ids=[...new Set((text.match(/[A-Za-z_$][\w$.-]{3,}/g)||[]).filter(x=>!STOP.has(x.toLowerCase())&&!named.has(x.toLowerCase())))].sort((a,b)=>b.length-a.length);
+  for(const t of[...q,...ids].slice(0,2)){const r=await wfind({q:t,cs:false,rx:false});if(r&&r.r&&r.r.length&&r.r.length<=40)o.push('Text "'+t+'" found at:\n'+hits(r,3,c).replace(/^/gm,'  '))}
+  const b=top[0];if(b&&b[0]>=4&&(!top[1]||b[0]>top[1][0])&&b[1].b>b[1].a){const n=b[1],t=c.text.slice(n.a,n.b);
+   if(t.length<=900){SEEN[idOf(n)]={a:n.a,b:n.b,t,f:c.f};o.push('Code of '+n.name+' (already read; replace_symbol('+n.name+') works now):\n```\n'+t+'\n```')}}
+  return o.join('\n').slice(0,2200)}catch(e){return hd}}
+/* prompt + forgiving parser */
+const SYS=['You edit the user\'s code with tools. Reply with exactly ONE line: CALL tool(argument)',
+ 'Tools: symbols(filter) | read_symbol(name) | replace_symbol(name) | search(text) | find_usages(name) | outline(id) | read_block(id) | read_lines(start,end) | replace_block(id) | replace_lines(start,end)',
+ 'The user message already lists matching symbols, text matches, and sometimes the code. Start from those and prefer names over ids.',
+ 'For any replace_ tool put the FULL new code for that symbol or line range in a ``` fence on the next lines. When finished reply: ANSWER: short summary.',
+ 'The file can be huge (tens of thousands of lines): never read it all. symbols(word) lists functions, read_symbol(name) reads one, read_lines(start,end) reads a window (markup, long functions). Replace only what changes.',
+ 'Rules: never guess code; read before you replace; change only what was asked; keep names and signatures.',
+ 'Example:','User: make the counter count by 2','CALL search(state.n++)','[result] index.html:L23 inc() { state.n++; render(); }  [b4]','CALL read_symbol(inc)','[result] method inc L23-23\ninc() { state.n++; render(); }','CALL replace_symbol(inc)','```','inc() { state.n += 2; render(); }','```',
+ 'User: fix the typo Wlecome','CALL search(Wlecome)','[result] index.html:L812 <h1>Wlecome back</h1>','CALL read_lines(812,812)','[result] 812│ <h1>Wlecome back</h1>','CALL replace_lines(812,812)','```','<h1>Welcome back</h1>','```'].join('\n');
+const SYSC=['You are a friendly coding assistant inside a code editor. You can LOOK at the user\'s project with tools, but you cannot edit it.','Reply with exactly ONE line: CALL tool(argument), or ANSWER: your reply.',
+ 'Tools: list_files() | open_file(name) | symbols(filter) | read_symbol(name) | search(text) | find_usages(name) | outline(id) | read_block(id) | read_lines(start,end)',
+ 'The user message already lists matching symbols and text matches. Start from those. The file can be huge, so never try to read it all.',
+ 'When asked what to change: look first (read_symbol, or search then read_lines), then ANSWER with the function or block name, its line number, and what to change and why. Never invent code; only mention what you saw. For casual questions just ANSWER.',
+ 'Example:','User: where do I change the button color?','CALL search(button)','[result] index.html:L4 button{padding:.6em 1em}  [b2]','CALL read_symbol(button)','[result] rule button L4-4\nbutton{padding:.6em 1em}',
+ 'ANSWER: Edit the CSS rule `button` in the <style> block (line 4) and add `background:#f5b544;`.'].join('\n');
+const chatHist=md=>LOG.filter(e=>e.m==md&&(e.k=='user'||e.k=='ai'||(e.k=='diff'&&e.st!='pending'))&&!/^(↻|⏹|⚠|Stopped)/.test(e.t||'')).slice(-6).map(e=>e.k=='user'?{role:'user',content:e.t.slice(0,500)}:
+ {role:'assistant',content:'ANSWER: '+(e.k=='diff'?(e.st=='accepted'?'Edit applied.':e.st=='rejected'?'The user rejected that edit.':'That edit did not apply ('+(e.msg||e.st)+').'):e.t.slice(0,500))});   // follow-ups like "now do the same for the reset button" work
+const mergeH=(h,u)=>{const o=[];[...h,{role:'user',content:u}].forEach(m=>{const L=o[o.length-1];L&&L.role==m.role?L.content+='\n'+m.content:o.push({...m})});if(o[0].role!='user')o.shift();return o};
+const strip=t=>t.replace(/<think>[\s\S]*?(<\/think>|$)/g,'').trim();   // Qwen3 reasoning blocks
+const FMT='Format error. Reply with ONE line like: CALL read_block(b3)  — or ANSWER: text. Nothing else.';
+function parseCall(t){const an=t.match(/ANSWER:?\s*([\s\S]*)/i),m=t.match(/(?:CALL\s*)?\b(outline|search|read_block|read_lines|read_symbol|symbols|find_usages|replace_block|replace_lines|replace_symbol|open_file|list_files)\b\s*[(:]\s*([^\n]*)/i);
+ if(m&&(!an||m.index<an.index)){const c={n:m[1].toLowerCase(),a:m[2].trim().replace(/\)\s*$/,'').replace(/^["'`]|["'`]$/g,'')};
+  if(/^replace_/.test(c.n)){const rest=t.slice(m.index+m[0].length),f=rest.match(/```[\w-]*\n?([\s\S]*?)(?:```|$)/);c.code=f?f[1]:rest}return c}
+ return an?{n:'answer',a:an[1].trim()}:null}
+/* "Thinking…" indicator: pulsing dot + step label + seconds, with the live model output underneath */
+const CTXMAX=7000;function fit(){let n=MSG.reduce((t,m)=>t+m.content.length,0);for(let i=1;i<MSG.length-1&&n>CTXMAX;i++){const m=MSG[i];if(m.role=='user'&&/^\[result\]/.test(m.content)&&m.content.length>40){n-=m.content.length-16;m.content='[result trimmed]'}}}   // keep the prompt small: drop the oldest tool output first
+function thinkUI(){const d=document.createElement('div'),h=document.createElement('div'),v=document.createElement('pre');let lb='Thinking',t0=Date.now();
+ d.className='aiA aiT';h.className='aiTh';v.className='aiLv';d.append(h,v);
+ const paint=()=>{const n=Math.floor((Date.now()-t0)/1000);h.textContent=lb+'… '+n+'s'+(n>45&&!v.textContent&&lb=='Thinking'?' · no output yet, tap Stop if it looks stuck':'')},iv=setInterval(paint,250);paint();
+ return{set(x){lb=x;t0=Date.now();paint();$('#aiLog').append(d);scr()},live(x){v.textContent=x.slice(-600);v.scrollTop=v.scrollHeight},end(){clearInterval(iv);d.remove()}}}
+/* agent loop */
+async function agent(text,again){if(aiBusy)return;if(!aiReady){await aiLoadM();if(!aiReady)return}
+ aiBusy=true;aiStopF=false;$('#aiGo').hidden=true;$('#aiStop').hidden=false;
+ if(again&&MSG.length){add({k:'ai',t:'↻ Repair attempt'});const L=MSG[MSG.length-1];L.role=='user'?L.content+='\n'+text:MSG.push({role:'user',content:text})}
+ else{cnt=0;ID.clear();for(const k in BY)delete BY[k];for(const k in SEEN)delete SEEN[k];flush();
+  CX={f:null};const chat=CFG.mode=='chat',u=(await brief(text))+'\n'+(chat?'Question: ':'Task: ')+text;
+  MSG=[{role:'system',content:chat?SYSC:SYS},...mergeH(chatHist(CFG.mode),u)];add({k:'user',t:text})}
+ let fin=0;const th=thinkUI();
+ try{for(let i=0,bad=0;i<STEPS;i++){
+   fit();th.set('Thinking');let acc='';
+   const out=strip(await PROV[CFG.prov].chat(MSG,CFG,t=>{acc+=t;th.live(acc);scr()}));th.live('');
+   if(aiStopF){add({k:'ai',t:'⏹ Stopped'+(out.trim()?':\n'+out.trim():'')});fin=1;break}
+   let c=parseCall(out);
+   if(!c){if(CFG.mode!='chat'&&!bad++){MSG.push({role:'assistant',content:out},{role:'user',content:FMT});continue}c={n:'answer',a:out.trim()||'(no reply)'}}else MSG.push({role:'assistant',content:out});
+   if(c.n=='answer'){add({k:'ai',t:c.a});fin=1;break}
+   th.set('Running '+c.n+'('+c.a.slice(0,30)+')');
+   let r;try{r=CFG.mode=='chat'&&/^replace_/.test(c.n)?'Chat is read-only. Describe the change in your ANSWER instead.':await TOOLS[c.n](c.a,c.code)}catch(x){r='error: '+x.message}
+   const nm=c.n+'('+c.a.slice(0,40)+')';
+   if(r&&r.prop){add({k:'tool',n:nm,r:'Proposed replacement for '+c.a+' (see diff)'});add({k:'diff',...r.prop,st:'pending'});fin=1;break}
+   r=String(r).slice(0,/^read_/.test(c.n)?2700:1900);add({k:'tool',n:nm,r});MSG.push({role:'user',content:'[result]\n'+r})}
+  if(!fin)add({k:'ai',t:'Stopped after '+STEPS+' steps without a final answer.'})}catch(x){add({k:'ai',t:'⚠ '+x.message})}
+ th.end();aiBusy=false;$('#aiGo').hidden=false;$('#aiStop').hidden=true}
+function aiMode(){$('#aiMode').value=CFG.mode;$('#aiIn').placeholder=CFG.mode=='chat'?'Ask about your code, e.g. where do I change the button color?':'e.g. change the counter to count by 2'}
+$('#aiMode').onchange=e=>{CFG.mode=e.target.value;cfgSave();aiMode()};
+/* chat log */
+function add(e){e.m=CFG.mode;LOG.push(e);draw(e);aiSave();scr()}
+function draw(e){const L=$('#aiLog');
+ if(e.k=='tool')L.append(rowEl({icon:'⚙',name:e.n,key:'ai'+uid(),kids:()=>{const p=document.createElement('pre');p.className='aiP';p.textContent=e.r;return[p]}}));
+ else if(e.k=='diff')L.append(diffEl(e));
+ else{const d=document.createElement('div');d.className=e.k=='user'?'aiU':'aiA';
+  if(e.k=='ai')e.t.split(/```[\w-]*\n?/).forEach((p,i)=>{if(!p)return;if(i%2){const x=document.createElement('pre');x.className='aiP aiC';x.textContent=p.replace(/\n$/,'');d.append(x)}else d.append(document.createTextNode(p))});else d.textContent=e.t;L.append(d)}}
+function diffEl(e){const d=document.createElement('div'),pre=document.createElement('pre'),h=document.createElement('div'),s=document.createElement('span');d.className='aiD';h.className='aiH';
+ const A=e.old.split('\n'),B=e.new.split('\n');let p=0,q=0;while(p<A.length&&p<B.length&&A[p]==B[p])p++;while(q<A.length-p&&q<B.length-p&&A[A.length-1-q]==B[B.length-1-q])q++;
+ const row=(c,a,m)=>a.forEach(l=>{const x=document.createElement('div');x.className=c;x.textContent=m+l;pre.append(x)});
+ row('dc',A.slice(Math.max(0,p-2),p),'  ');row('dr',A.slice(p,A.length-q),'- ');row('da',B.slice(p,B.length-q),'+ ');row('dc',A.slice(A.length-q,A.length-q+2),'  ');
+ s.textContent='Proposed edit · '+((cP().files.find(f=>f.id==e.f)||{}).name||'?');h.append(s);
+ if(e.st=='pending')[['Accept',()=>accept(e,d)],['Reject',()=>{e.st='rejected';aiSave();d.replaceWith(diffEl(e))}]].forEach(([l,f])=>{const b=document.createElement('button');b.textContent=l;b.onclick=f;h.append(b)});
+ else{const m=document.createElement('em');m.textContent=e.st=='accepted'?'✓ Accepted':e.st=='rejected'?'Rejected':e.msg||e.st;h.append(m)}
+ d.append(h,pre);return d}
+/* safe apply: stale check → single undo step → reparse + syntax check → auto-revert + one repair */
+function bal(src,md,off){off=off||0;const m=CodeMirror.getMode({indentUnit:2},md),st=CodeMirror.startState(m),stk=[],P={')':'(',']':'[','}':'{'},L=src.split('\n');
+ for(let i=0;i<L.length;i++){const s=new CodeMirror.StringStream(L[i],2,{});if(!L[i]&&m.blankLine)m.blankLine(st);
+  while(!s.eol()){const sty=m.token(s,st)||'',tx=s.current();s.start=s.pos;if(/string|comment|regexp|number/.test(sty))continue;
+   for(const ch of tx){if('([{'.includes(ch))stk.push([ch,i+1+off]);else if(ch in P){const o=stk.pop();if(!o||o[0]!=P[ch])return'Unbalanced "'+ch+'" on line '+(i+1+off)}}}}
+ return stk.length?'Unclosed "'+stk[stk.length-1][0]+'" opened on line '+stk[stk.length-1][1]:''}
+async function verify(e){const r=await wparse(),t=cm.getValue(),e2=e.a+e.new.length,hit=n=>n.a<=e2&&n.b>=e.a;
+ const T={text:t};
+ for(const s of r.scripts.filter(hit)){const src=t.slice(s.a,s.b).replace(/^<script[^>]*>|<\/script>$/gi,''),off=lnOf(T,s.a)-1;let x='';
+  if(!/module|src/.test(s.name)&&!/^\s*(import|export)\s/m.test(src)){try{new Function(src)}catch(z){const y=bal(src,'javascript',off);x=y?y+' ('+z.message+')':'SyntaxError: '+z.message}}   // native check first: fast even on a 30k-line script
+  else x=bal(src,'javascript',off);if(x)return x}
+ for(const s of r.styles.filter(hit)){const x=bal(t.slice(s.a,s.b),'css',lnOf(T,s.a)-1);if(x)return x}return''}
+async function accept(e,d){const done=(st,msg)=>{e.st=st;e.msg=msg;aiSave();d.replaceWith(diffEl(e))};
+ if(!cP().files.some(f=>f.id==e.f))return done('stale','File no longer exists');if(e.f!=S.f)openFile(S.p,e.f);unfocus();
+ if(cm.getValue().slice(e.a,e.b)!==e.old)return done('stale','Not applied: the code changed since the model read it. Ask again.');
+ cm.replaceRange(e.new,cm.posFromIndex(e.a),cm.posFromIndex(e.b),'ai');
+ const err=await verify(e);
+ if(err){cm.undo();done('failed','Rejected & reverted: '+err);if(rep++<1)agent('Your code failed a check: '+err+'\nCall replace_block again for the same block with corrected code.',true);return}
+ done('accepted');toast('Edit applied — ↶ undoes it')}
+async function runChk(){run();await new Promise(r=>setTimeout(r,1500));const er=[...document.querySelectorAll('#con .error')].map(x=>x.textContent).slice(0,3).join('\n');$('#rx2').click();
+ if(!er)return toast('No console errors');if(rep++<1)agent('Running the page logged errors:\n'+er+'\nFix them with replace_block.',MSG.length>0);else add({k:'ai',t:'Console errors:\n'+er})}
+$('#aiCk').onclick=runChk;
+async function aiClear(){if(aiBusy)return toast('Stop the agent first');if(!LOG.length&&!MSG.length)return toast('Chat is already empty');
+ if(LOG.some(e=>e.k=='diff'&&e.st=='pending')&&!await sure('An edit is waiting for your approval. Clear the chat anyway?','Clear chat',1))return;
+ LOG=[];MSG=[];rep=0;ID.clear();for(const k in BY)delete BY[k];for(const k in SEEN)delete SEEN[k];CX={f:null};$('#aiLog').textContent='';aiSave();toast('Chat cleared')}
+$('#aiClr').onclick=aiClear;
+$('#aiGo').onclick=()=>{const t=$('#aiIn').value.trim();if(!t)return;$('#aiIn').value='';if(t=='/clear')return aiClear();rep=0;agent(t)};
+$('#aiIn').onkeydown=e=>{if(e.key=='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();$('#aiGo').onclick()}};
+$('#aiStop').onclick=()=>{aiStopF=true;PROV[CFG.prov].stop();
+ setTimeout(()=>{if(aiBusy&&aiStopF&&aiRej){try{aiW&&aiW.terminate()}catch(e){}aiW=null;aiReady=false;aiRej(new Error('The model did not respond to Stop, so it was shut down. Send again to reload it.'))}},6000)};   // a hung worker can't hear "stop"; don't leave the UI spinning forever
+/* ---------- v2: startup cleanup, back button, easier editing, welcome + guide ---------- */
+async function wipeModels(){try{if(window.caches)for(const k of await caches.keys())await caches.delete(k)}catch(e){}
+ try{const db=await DB;if(db){const st=db.transaction('kv','readwrite').objectStore('kv');st.openKeyCursor().onsuccess=e=>{const c=e.target.result;if(c){if(/^(mdl:|mdls$|ai:|aicfg:)/.test(String(c.key)))st.delete(c.key);c.continue()}}}}catch(e){}}
+/* modals */
+const MD=[];
+function openMdl(h,cls){const m=document.createElement('div');m.className='mdl';m.innerHTML='<div class="card '+(cls||'')+'">'+h+'</div>';document.body.append(m);MD.push(m);
+ if(window.visualViewport){const vv=visualViewport,f=()=>{m.style.top=vv.offsetTop+"px";m.style.height=vv.height+"px";m.style.bottom="auto"};vv.addEventListener("resize",f);vv.addEventListener("scroll",f);f();m._vv=f}
+ m.addEventListener('mousedown',e=>{if(e.target==m&&!m._nb)closeMdl(m)});const x=m.querySelector('.x');if(x)x.onclick=()=>closeMdl(m);return m}
+function closeMdl(m,force){m=m||MD[MD.length-1];if(!m)return false;if(!force&&m._ask&&m._ask()){if(!m._q){m._q=1;sure('Your changes to this block have not been applied yet.','Discard changes',1,'Discard changes?').then(y=>{m._q=0;if(y)closeMdl(m,1)})}return true}
+ MD.splice(MD.indexOf(m),1);if(m._vv){visualViewport.removeEventListener("resize",m._vv);visualViewport.removeEventListener("scroll",m._vv)}m.remove();if(m._c)m._c();return true}
+addEventListener('keydown',e=>{if(e.key=='Escape'&&MD.length)closeMdl()});
+
+/* ---------- custom dialogs (replace prompt / confirm) ---------- */
+function dlg({title,msg,value,ok,danger,input}){return new Promise(res=>{
+ const m=openMdl('<div class="mh"><b></b></div><div class="mb"><p></p><input type="text" class="dq" autocomplete="off" hidden></div><div class="mf"><span class="sp"></span><button class="cx">Cancel</button><button class="ok"></button></div>','sm');
+ let done=0;const fin=v=>{if(!done){done=1;res(v)}},q=m.querySelector('.dq'),p=m.querySelector('p'),okb=m.querySelector('.ok');
+ m.querySelector('b').textContent=title||'';p.textContent=msg||'';p.hidden=!msg;okb.textContent=ok||'OK';if(danger)okb.classList.add('dg');
+ if(input){q.hidden=false;q.value=value==null?'':value;q.style.marginTop=msg?'8px':'0'}
+ const go=()=>{fin(input?q.value:true);closeMdl(m)};okb.onclick=go;m.querySelector('.cx').onclick=()=>closeMdl(m);m._c=()=>fin(input?null:false);
+ q.addEventListener('keydown',e=>{if(e.key=='Enter'){e.preventDefault();go()}});
+ setTimeout(()=>{if(input){q.focus();q.select()}else okb.focus()},30)})}
+const askText=(title,value,msg)=>dlg({title,value,msg,input:1,ok:'Save'});
+const sure=(msg,ok,danger,title)=>dlg({title:title||'Please confirm',msg,ok:ok||'OK',danger});
+/* back button: closes whatever is open, never leaves the app */
+let armed=0;const arm=()=>{if(!armed){armed=1;try{history.pushState({tn:1},'')}catch(e){}}};
+try{history.replaceState({tn:0},'');history.pushState({tn:1},'');armed=1}catch(e){}
+addEventListener('popstate',()=>{try{history.pushState({tn:1},'')}catch(e){}armed=0;
+ if(closeMdl())return;if(!$('#run').hidden)return void $('#rx2').click();if(document.body.classList.contains('open'))return side(false);if(fm.length)return unfocus();toast('Back is turned off in Tenon')});
+['pointerdown','keydown','touchend'].forEach(ev=>addEventListener(ev,arm,{passive:true}));
+/* jump back */
+const JB=[];function jbPush(){const c=cm.getCursor();JB.push({f:S.f,l:c.line,ch:c.ch});if(JB.length>50)JB.shift()}
+function jumpBack(){const j=JB.pop();if(!j)return toast('Nowhere to jump back to');unfocus();if(j.f!=S.f&&cP().files.some(f=>f.id==j.f))openFile(S.p,j.f,true);
+ const l=Math.min(j.l,cm.lastLine()),p={line:l,ch:Math.min(j.ch,cm.getLine(l).length)};cm.setCursor(p);cm.scrollIntoView({from:p,to:p},cm.getScrollInfo().clientHeight/3);flash(l);closeDrawer()}
+{const g0=go,h0=hit;go=a=>{jbPush();g0(a)};hit=x=>{jbPush();h0(x)}}
+async function gotoLine(){const n=cm.lineCount(),v=await askText('Go to line',cm.getCursor().line+1,'Enter a number from 1 to '+n+'. Add a column after a colon, like 120:8.');if(v==null)return;const m=/(\d+)(?:\D+(\d+))?/.exec(v);if(!m)return;
+ jbPush();unfocus();const l=Math.min(Math.max(+m[1],1),n)-1,p={line:l,ch:m[2]?Math.min(+m[2]-1,cm.getLine(l).length):0};cm.setCursor(p);cm.scrollIntoView({from:p,to:p},cm.getScrollInfo().clientHeight/3);flash(l)}
+/* line tools */
+function dupLine(){const s=cm.getCursor('from'),e=cm.getCursor('to'),b=e.line-(e.ch==0&&e.line>s.line?1:0),end={line:b,ch:cm.getLine(b).length};cm.replaceRange('\n'+cm.getRange({line:s.line,ch:0},end),end)}
+function moveLine(d){const s=cm.getCursor('from'),e=cm.getCursor('to'),a=s.line,b=e.line-(e.ch==0&&e.line>a?1:0),L=n=>cm.getLine(n).length;if(d<0?a==0:b>=cm.lastLine())return;
+ cm.operation(()=>{if(d<0){const t=cm.getLine(a-1);cm.replaceRange('',{line:a-1,ch:0},{line:a,ch:0});cm.replaceRange('\n'+t,{line:b-1,ch:L(b-1)})}
+  else{const t=cm.getLine(b+1);cm.replaceRange('',{line:b,ch:L(b)},{line:b+1,ch:L(b+1)});cm.replaceRange(t+'\n',{line:a,ch:0})}
+  cm.setSelection({line:s.line+d,ch:s.ch},{line:e.line+d,ch:e.ch})})}
+/* edit one block on its own (like the assistant used to) */
+function blockEdit(a,b,label){unfocus();closeDrawer();const A=cm.posFromIndex(a),B=cm.posFromIndex(b),s={line:A.line,ch:0},e={line:B.line,ch:cm.getLine(B.line).length},orig=cm.getRange(s,e),nm=cF().name,
+ md=/\.js$/i.test(nm)?'javascript':/\.css$/i.test(nm)?'css':R.styles.some(x=>a>=x.a&&a<=x.b)?'css':R.scripts.some(x=>a>=x.a&&a<=x.b)?'javascript':'htmlmixed';
+ const m=openMdl('<div class="mh"><b></b><button class="x" title="Close">✕</button></div><div class="be"></div><div class="kbm"></div><div class="mf"><span class="sp"></span><button class="cx">Cancel</button><button class="ok">Apply</button></div>','big');
+ m._nb=1;m.querySelector('b').textContent='Editing '+label+' (lines '+(s.line+1)+' to '+(e.line+1)+')';
+ const ed=CodeMirror(m.querySelector('.be'),{value:orig,mode:md,theme:'hje',lineNumbers:true,firstLineNumber:s.line+1,matchBrackets:true,autoCloseBrackets:true,autoCloseTags:true,styleActiveLine:true,indentUnit:2,tabSize:2,
+  extraKeys:{Tab:c=>c.somethingSelected()?c.indentSelection('add'):c.replaceSelection('  '),'Shift-Tab':c=>c.indentSelection('subtract'),'Ctrl-Enter':ap,'Cmd-Enter':ap,'Ctrl-/':'toggleComment','Cmd-/':'toggleComment'}});
+ m._ask=()=>ed.getValue()!==orig;{const k=m.querySelector('.kbm');if(document.body.classList.contains('kb'))kbFill(k,ed);else k.remove()}
+ async function ap(){const v=ed.getValue();if(v===orig)return closeMdl(m);let w='';try{w=md=='htmlmixed'?'':bal(v,md,s.line)}catch(x){}
+  if(w&&!await sure(w+'. The block may not work as written.','Apply anyway',0,'Possible problem'))return;if(cm.getRange(s,e)!==orig&&!await sure('This part of the file changed after you opened this editor. Applying will overwrite it.','Overwrite',1,'File changed'))return;
+  m._ask=null;closeMdl(m);cm.replaceRange(v,s,e);cm.setCursor(s);flash(s.line);toast('Applied. Undo (↶) reverts it')}
+ m.querySelector('.ok').onclick=ap;m.querySelector('.cx').onclick=()=>closeMdl(m);setTimeout(()=>{ed.refresh();ed.focus()},40)}
+function editHere(){if(cm.somethingSelected())return blockEdit(cm.indexFromPos(cm.getCursor('from')),cm.indexFromPos(cm.getCursor('to')),'selection');
+ const i=cm.indexFromPos(cm.getCursor());let list=R.scripts.some(x=>i>=x.a&&i<=x.b)?R.scripts:R.styles,n=null;
+ for(;;){const q=list.find(x=>i>=x.a&&i<=x.b&&x.b>x.a);if(!q)break;n=q;list=q.c||[]}
+ if(n)return blockEdit(n.a,n.b,n.name);const l=cm.getCursor().line;blockEdit(cm.indexFromPos({line:Math.max(0,l-20),ch:0}),cm.indexFromPos({line:Math.min(cm.lastLine(),l+20),ch:0}),'nearby lines')}
+/* find: next/prev, replace one, replace all */
+let LR=[],HI=-1;
+function stepHit(d){if(!LR.length)return toast('No matches');HI=(HI+d+LR.length)%LR.length;hit(LR[HI])}
+function repRe(){try{return new RegExp($('#rx').checked?$('#q').value:$('#q').value.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),($('#cs').checked?'':'i')+'g')}catch(e){return null}}
+const subL=(t,re)=>{const v=$('#rp').value;re.lastIndex=0;return $('#rx').checked?t.replace(re,v):t.replace(re,()=>v)};
+function edLine(fid,l,fn){if(fid==S.f){const t=cm.getLine(l),n=fn(t);if(n!==t)cm.replaceRange(n,{line:l,ch:0},{line:l,ch:t.length});return}
+ const f=cP().files.find(x=>x.id==fid),L=f.text.split('\n');L[l]=fn(L[l]);f.text=L.join('\n');if(docs[fid])docs[fid].setValue(f.text)}
+function replOne(x){const re=repRe();if(!re)return;unfocus();const v=$('#rp').value,rx=$('#rx').checked,r1=new RegExp(re.source,re.flags.replace('g',''));
+ edLine(x.f,x.l,t=>{const p=t.slice(x.c,x.c+x.len);return r1.test(p)?t.slice(0,x.c)+(rx?p.replace(r1,v):v)+t.slice(x.c+x.len):t});persist();setTimeout(doFind,60);toast('Replaced')}
+async function replAll(){if(!$('#q').value)return toast('Type what to find first');flush();const re=repRe();if(!re)return toast('That pattern is not valid');
+ if(new RegExp(re.source).test(''))return toast('That pattern matches empty text');unfocus();
+ const fs=$('#all').checked?cP().files:[cF()],cnt=(t)=>{let k=0;t.split('\n').forEach(l=>{re.lastIndex=0;const m=l.match(re);if(m)k+=m.length});return k};let n=0,nf=0;
+ fs.forEach(f=>{const k=cnt(f.id==S.f?cm.getValue():f.text);if(k){n+=k;nf++}});if(!n)return toast('No matches');
+ if(!await sure('Replace '+n+' match'+(n>1?'es':'')+' in '+nf+' file'+(nf>1?'s':'')+'? Undo works for the file you have open.','Replace all',0,'Replace all?'))return;
+ fs.forEach(f=>{if(f.id==S.f)cm.operation(()=>{for(let i=0,c=cm.lineCount();i<c;i++){const t=cm.getLine(i);re.lastIndex=0;if(re.test(t)){const u=subL(t,re);cm.replaceRange(u,{line:i,ch:0},{line:i,ch:t.length})}}});
+  else{const T=f.text.split('\n').map(l=>{re.lastIndex=0;return re.test(l)?subL(l,re):l}).join('\n');if(T!==f.text){f.text=T;if(docs[f.id])docs[f.id].setValue(T)}}});
+ persist();doFind();toast('Replaced '+n)}
+$('#rpAll').onclick=replAll;$('#nxt').onclick=()=>stepHit(1);$('#prv').onclick=()=>stepHit(-1);
+$('#q').addEventListener('keydown',e=>{if(e.key=='Enter'){e.preventDefault();stepHit(e.shiftKey?-1:1)}});
+/* keys, menu, key bar */
+cm.addKeyMap({'Ctrl-E':editHere,'Cmd-E':editHere,'Ctrl-G':gotoLine,'Cmd-G':gotoLine,'Ctrl-D':dupLine,'Cmd-D':dupLine,'Alt-Up':()=>moveLine(-1),'Alt-Down':()=>moveLine(1),'Alt-B':jumpBack});
+[['Edit block or selection',editHere],['Go to line',gotoLine],['Jump back',jumpBack],['Duplicate line',dupLine],['Move line up',()=>moveLine(-1)],['Move line down',()=>moveLine(1)],['Guide',()=>docShow()],['Welcome screen',()=>introShow(1)]]
+ .forEach(([l,f])=>{const b=document.createElement('button');b.textContent=l;b.onclick=()=>{$('#menu').hidden=true;f()};$('#menu').append(b)});
+[['✎',editHere,'Edit block or selection'],['⤺',jumpBack,'Jump back'],['Ln',gotoLine,'Go to line'],['⧉',dupLine,'Duplicate line'],['↑ln',()=>moveLine(-1),'Move line up'],['↓ln',()=>moveLine(1),'Move line down']].reverse()
+ .forEach(([l,f,t])=>{const b=document.createElement('button');b.textContent=l;b.title=t;b.addEventListener('mousedown',e=>e.preventDefault());b.onclick=()=>{f();if(!MD.length)cm.focus()};$('#kb').prepend(b)});
+$('#pos').onclick=gotoLine;$('#pos').style.cursor='pointer';$('#pos').title='Go to line';$('#bDoc').onclick=()=>docShow();
+/* welcome + guide */
+function introShow(force){let off;try{off=localStorage.getItem('tenon-intro-off')}catch(e){}if(off&&!force)return;
+ const m=openMdl(`<div class="mh"><b>Welcome to Tenon</b><button class="x" title="Close">✕</button></div><div class="mb">
+<p>Tenon is a code editor for people who have to work in big files. Picture one HTML page with thousands of lines, or a single script that takes forever to scroll through.</p>
+<p>Instead of hunting around, you get a map. Tenon reads your file and lists every script, style, function and variable in the side panel. Tap one and you land right on it. Tap the pencil and just that piece opens on its own, so you can change it without the rest of the file in your way.</p>
+<p>It works fine on a phone too. There is a row of keys above your keyboard for the symbols that are a pain to type, and the panels slide away when you are done with them.</p>
+<div class="tip">Everything stays in your browser and nothing is uploaded. That also means clearing your browser data clears your projects, so download anything you would hate to lose.</div>
+<p>Three things to try: tap <kbd>☰</kbd> to open the side panel, tap <kbd>▶</kbd> to run your page, and tap <kbd>?</kbd> whenever you want the guide.</p></div>
+<div class="mf"><label class="dn"><input type="checkbox" id="dn">Don't show this again</label><span class="sp"></span><button id="ig">Read the guide</button><button class="ok" id="is">Start editing</button></div>`);
+ const dn=m.querySelector('#dn');m._c=()=>{try{if(dn.checked)localStorage.setItem('tenon-intro-off','1')}catch(e){}};
+ m.querySelector('#is').onclick=()=>closeMdl(m);m.querySelector('#ig').onclick=()=>{closeMdl(m);docShow()}}
+const DOC=`<h3>The basics</h3><p>Tenon opens with a small demo project so you can look around. Tap <kbd>☰</kbd> at the top left to open the side panel. On a phone it slides over the editor and closes itself when you pick something. You can also swipe right from the left edge of the screen to open it, and swipe left to close it.</p>
+<h3>Side panel</h3><ul><li><b>Structure</b> lists every script, style and element with an id. Tap one to jump to it.</li><li><b>Functions</b> shows functions, classes and methods. Type in the box to filter.</li><li><b>Variables</b> shows variables and CSS custom properties.</li><li><b>Constants</b> lists every <code>const</code> in the file in order, with the class or function it is declared in shown beside it.</li><li><b>Find</b> searches the whole project, or only the open file.</li><li><b>Marks</b> lists your bookmarks across the project.</li><li><b>GitHub</b> connects to your repositories so you can pull, push and create new ones.</li><li><b>Projects</b> is where your projects, folders and files live. Use ⊞ to add a folder, ✎ to rename or move one, and ✕ to delete one with everything in it.</li></ul>
+<h3>Editing big files</h3><p>Scrolling through thousands of lines is slow, so Tenon gives you ways to skip it.</p><ul>
+<li><b>Edit one piece.</b> Tap <kbd>✎</kbd> next to a function, class, script or style rule. A small editor opens with only that code. Tap <b>Apply</b> and it goes back into the file as one change, so one undo reverses it. The key bar shows up there too.</li>
+<li><b>Edit here.</b> Press <kbd>Ctrl</kbd>+<kbd>E</kbd>, or use the <kbd>✎</kbd> key above your keyboard, to open whatever your cursor is inside. Select some lines first and it opens just those.</li>
+<li><b>Focus.</b> Tap <kbd>◎</kbd> to hide everything except one block, right in the main editor.</li>
+<li><b>Go to line.</b> Tap the line number at the bottom, or press <kbd>Ctrl</kbd>+<kbd>G</kbd>.</li>
+<li><b>Jump back.</b> After you jump somewhere, <kbd>⤺</kbd> takes you back to where you were.</li>
+<li><b>Line tools.</b> Duplicate a line or move it up and down from the key bar or the <kbd>⋮</kbd> menu.</li>
+<li><b>Jump to a definition.</b> On a touch screen, double tap a function or method name to select it. If Tenon finds where it is defined, a small <kbd>↗</kbd> button appears beside it. Tap it to go there. Tenon looks inside the same class or block first, then the rest of the file, then your other files.</li><li><b>Bookmarks.</b> Tap <kbd>★</kbd> to mark the line you are on, or tap in the gutter left of a line number. <kbd>★▸</kbd> jumps to the next bookmark in the file and the Marks tab lists them all. Bookmarks move with your text as you edit and are still there next time.</li><li><b>Rename.</b> Put your cursor on a name and pick Rename word at cursor in the <kbd>⋮</kbd> menu. Tenon finds every whole-word match in the file, so type the new name and press Replace all.</li><li><b>Fold.</b> In the <kbd>⋮</kbd> menu, Fold all shrinks everything to single lines. Open only what you need.</li></ul>
+<h3>Find and replace</h3><p>Type in the Find tab and the results are grouped by file. Tap one to jump to it. <kbd>Enter</kbd> goes to the next match and <kbd>Shift</kbd>+<kbd>Enter</kbd> to the previous one.</p>
+<p>To replace, type the new text in the second box, then tap <kbd>⇄</kbd> on one result or press <b>Replace all</b>. It asks before changing anything. <b>Aa</b> matches upper and lower case exactly. <b>Regex</b> lets you search with patterns, and <code>$1</code> works in the replacement.</p>
+<div class="tip">Undo works for the file you have open. Other files change right away, so check the count before you confirm.</div>
+<h3>Running your page</h3><p>Tap <kbd>▶</kbd> to run the open HTML file. Errors and console messages show at the bottom. If your page links a script or stylesheet that exists in the same project, Tenon uses your copy. <b>Full access</b> lets the page save to localStorage and IndexedDB. <b>Storage</b> shows what it saved and <b>Reset data</b> clears it. Your projects are never touched.</p>
+<h3>Projects and files</h3><p>In the Projects tab you can add projects and files, or import .html, .js, .css, .txt and .json files, plus .tenon project files. Each row has buttons to rename, copy, download or delete. The <kbd>⇩</kbd> on a project saves everything as one .tenon file you can import again later.</p>
+<h3>GitHub</h3><p>Open the GitHub tab in the side panel to sync a project with a repository.</p><ul><li><b>Connect.</b> Paste a personal access token. A fine-grained token with <b>Contents: read &amp; write</b> on the repos you need is safest. To create repositories from Tenon it also needs <b>Administration: read &amp; write</b> on all repositories, or use a classic token with the <b>repo</b> scope. The token stays on this device and is only sent to api.github.com. <b>Disconnect</b> removes it.</li><li><b>Pick a repository and branch.</b> Use the filter box to narrow the list. A 🔒 marks private repositories. Tap <kbd>↻</kbd> to reload the list.</li><li><b>Pull</b> downloads the text files from the branch and recreates its folders, including folders that only hold images or other skipped files. You can put them in a new project, or update the current one. Binary and very large files are skipped. If a file changed both here and on GitHub, you choose whether to keep yours or take GitHub's.</li><li><b>Push</b> shows every change first: files modified, added or removed, each with a line diff you can open. Untick files you do not want to send, write a commit message, then confirm. Files that also changed on GitHub since your last sync start unticked so you do not overwrite them.</li><li><b>New repo</b> creates a repository from the open project. The name is filled in from the project and you can change it. Choose <b>Private</b> or <b>Public</b>. Private is selected by default, and Public asks you to confirm. By default it pushes the project's files straight away as the first commit, and you can untick that to push later.</li></ul><p>Folders are pushed as part of each file's path. Git does not store empty folders, so an empty folder stays local until it has a file in it. Only the files in your project are pushed, at the top level of the repository. The project name is not added as a folder, and nothing else is included. Once pushed, the project is linked to that repository and branch, and the panel shows how many files have changed since the last sync.</p>
+<h3>Saving and privacy</h3><p>Your work saves by itself in this browser, along with where you were in each file. Nothing is sent anywhere, unless you connect GitHub and choose to pull or push. Browsers can wipe their data though (private windows, cleanup apps, "clear site data"), so download a copy of anything you care about.</p>
+<h3>Shortcuts</h3><table><tr><td>Find</td><td><kbd>Ctrl</kbd>+<kbd>F</kbd></td></tr><tr><td>Run</td><td><kbd>Ctrl</kbd>+<kbd>Enter</kbd></td></tr><tr><td>Comment a line</td><td><kbd>Ctrl</kbd>+<kbd>/</kbd></td></tr><tr><td>Edit block</td><td><kbd>Ctrl</kbd>+<kbd>E</kbd></td></tr><tr><td>Go to line</td><td><kbd>Ctrl</kbd>+<kbd>G</kbd></td></tr><tr><td>Duplicate line</td><td><kbd>Ctrl</kbd>+<kbd>D</kbd></td></tr><tr><td>Move line</td><td><kbd>Alt</kbd>+<kbd>↑</kbd> / <kbd>↓</kbd></td></tr><tr><td>Jump back</td><td><kbd>Alt</kbd>+<kbd>B</kbd></td></tr><tr><td>Toggle bookmark</td><td><kbd>Alt</kbd>+<kbd>M</kbd></td></tr><tr><td>Next / previous bookmark</td><td><kbd>F2</kbd> / <kbd>Shift</kbd>+<kbd>F2</kbd></td></tr><tr><td>Leave focus mode</td><td><kbd>Esc</kbd></td></tr></table>
+<p style="margin-top:8px">On a Mac, use <kbd>Cmd</kbd> instead of <kbd>Ctrl</kbd>.</p>
+<div class="tip">The Back button on your phone or browser closes the guide, the preview or the side panel. It will not take you out of Tenon.</div>`;
+function docShow(){const m=openMdl('<div class="mh"><b>Tenon guide</b><button class="x" title="Close">✕</button></div><nav class="chips"></nav><div class="mb">'+DOC+'</div>','big'),b=m.querySelector('.mb'),n=m.querySelector('.chips');
+ b.querySelectorAll('h3').forEach(h=>{const c=document.createElement('button');c.textContent=h.textContent;c.onclick=()=>h.scrollIntoView({behavior:'smooth',block:'start'});n.append(c)})}
+/* ---------- v3: bookmarks, edge swipe, rename ---------- */
+cm.setOption('gutters',['bmg','CodeMirror-linenumbers','CodeMirror-foldgutter']);
+TABS.push(['marks','Marks']);
+{const b=document.createElement('button');b.id='t-marks';b.textContent='Marks';b.onclick=()=>tab('marks');$('#tabs').insertBefore(b,$('#t-files'))}
+const BMH={},bmDot=()=>{const d=document.createElement('div');d.className='bmk';d.textContent='●';return d};
+const bmLines=f=>f.id==S.f&&BMH[f.id]?BMH[f.id].map(h=>cm.getLineNumber(h)).filter(n=>n!=null).sort((a,b)=>a-b):(f.marks||[]);
+function initMarks(){const f=cF();if(!BMH[f.id]){BMH[f.id]=[];(f.marks||[]).forEach(l=>{if(l<cm.lineCount()){const h=cm.getLineHandle(l);BMH[f.id].push(h);cm.setGutterMarker(h,'bmg',bmDot())}})}rBm()}
+function saveMarks(){const f=cF();if(!BMH[f.id])return;const ls=BMH[f.id].map(h=>[h,cm.getLineNumber(h)]).filter(x=>x[1]!=null);BMH[f.id]=ls.map(x=>x[0]);f.marks=ls.map(x=>x[1]).sort((a,b)=>a-b);persist();rBm()}
+function toggleMark(l){if(l==null)l=cm.getCursor().line;const f=cF(),h=cm.getLineHandle(l),a=BMH[f.id]||(BMH[f.id]=[]),i=a.indexOf(h);
+ if(i>=0){a.splice(i,1);cm.setGutterMarker(h,'bmg',null);toast('Bookmark removed')}else{a.push(h);cm.setGutterMarker(h,'bmg',bmDot());toast('Bookmarked line '+(l+1))}saveMarks()}
+function goMark(fid,l){jbPush();unfocus();if(fid!=S.f)openFile(S.p,fid,true);l=Math.min(l,cm.lastLine());const p={line:l,ch:0};cm.setCursor(p);cm.scrollIntoView({from:p,to:p},cm.getScrollInfo().clientHeight/3);flash(l);closeDrawer()}
+function nextMark(d){const ls=bmLines(cF()),c=cm.getCursor().line;if(!ls.length)return toast('No bookmarks in this file');
+ goMark(S.f,d>0?(ls.find(x=>x>c)??ls[0]):([...ls].reverse().find(x=>x<c)??ls[ls.length-1]))}
+function rmMark(f,l){if(f.id==S.f){const a=BMH[f.id],h=a.find(x=>cm.getLineNumber(x)==l);if(h){a.splice(a.indexOf(h),1);cm.setGutterMarker(h,'bmg',null)}saveMarks()}else{f.marks=(f.marks||[]).filter(x=>x!=l);persist();rBm()}}
+function rBm(){const c=$('#bml');c.textContent='';let n=0;
+ cP().files.forEach(f=>{const ls=bmLines(f);if(!ls.length)return;const T=f.id==S.f?null:f.text.split('\n');
+  ls.forEach(l=>{n++;const t=(T?T[l]:cm.getLine(l))||'';c.append(rowEl({icon:'★',name:t.trim()||'(blank line)',meta:(cP().files.length>1?f.name+' ':'')+'L'+(l+1),go:()=>goMark(f.id,l),acts:[['✕',()=>rmMark(f,l),'Remove']]}))})});
+ if(!n)c.innerHTML='<p class="e">No bookmarks yet. Use the button above, the ★ key, or tap left of a line number.</p>'}
+{const o0=openFile;openFile=function(...a){try{saveMarks()}catch(e){}o0(...a);initMarks()}}
+let bmT;cm.on('change',()=>{clearTimeout(bmT);bmT=setTimeout(()=>{const a=BMH[S.f];if(a&&a.length)saveMarks()},600)});
+cm.on('gutterClick',(c,l,g)=>{if(g=='bmg')toggleMark(l)});
+$('#bmAdd').onclick=()=>toggleMark();
+$('#bmClr').onclick=async()=>{if(!await sure('Remove all bookmarks in this project?','Remove all',1,'Clear bookmarks?'))return;cP().files.forEach(f=>{const d=f.id==S.f?cm:docs[f.id];if(d)d.clearGutter('bmg');BMH[f.id]=[];f.marks=[]});persist();rBm()};
+cm.addKeyMap({'Alt-M':()=>toggleMark(),'F2':()=>nextMark(1),'Shift-F2':()=>nextMark(-1)});
+/* rename the word under the cursor: whole-word regex search, then Replace all */
+function renameWord(){const w=cm.findWordAt(cm.getCursor()),s=cm.getRange(w.anchor,w.head);if(!/^[\w$]+$/.test(s))return toast('Put the cursor on a name first');
+ $('#q').value='\\b'+s.replace(/\$/g,'\\$')+'\\b';$('#rx').checked=true;$('#cs').checked=true;$('#all').checked=false;side(true);tab('find');doFind();$('#rp').value=s;$('#rp').focus();$('#rp').select();toast('Type the new name, then Replace all')}
+[['Toggle bookmark',()=>toggleMark()],['Next bookmark',()=>nextMark(1)],['Previous bookmark',()=>nextMark(-1)],['Rename word at cursor',renameWord]]
+ .forEach(([l,f])=>{const b=document.createElement('button');b.textContent=l;b.onclick=()=>{$('#menu').hidden=true;f()};$('#menu').append(b)});
+[['★',()=>toggleMark(),'Bookmark this line'],['★▸',()=>nextMark(1),'Next bookmark']].reverse()
+ .forEach(([l,f,t])=>{const b=document.createElement('button');b.textContent=l;b.title=t;b.addEventListener('mousedown',e=>e.preventDefault());b.onclick=()=>{f();if(!MD.length)cm.focus()};$('#kb').prepend(b)});
+/* swipe from the left edge (or across the header/footer) to open the panel, swipe left to close it */
+{let t0=null;const one=e=>e.touches.length==1?e.touches[0]:null;
+ addEventListener('touchstart',e=>{const t=one(e);if(!t||innerWidth>820||MD.length||!$('#run').hidden){t0=null;return}const op=document.body.classList.contains('open');
+  t0={x:t.clientX,y:t.clientY,op,ok:!(op&&e.target.closest&&e.target.closest('#tabs'))&&(op||t.clientX<=32||!!(e.target.closest&&e.target.closest('header,footer')))}},{passive:true,capture:true});
+ addEventListener('touchmove',e=>{const t=one(e);if(!t0||!t0.ok||!t)return;const dx=t.clientX-t0.x,dy=t.clientY-t0.y;if(Math.abs(dx)<50||Math.abs(dy)>Math.abs(dx)*.7)return;
+  if(!t0.op&&dx>0){t0=null;side(true)}else if(t0.op&&dx<0){t0=null;side(false)}},{passive:true,capture:true});
+ addEventListener('touchend',()=>{t0=null},{passive:true})}
+/* ---------- v4: jump icon on a selected name, key bar inside the block editor ---------- */
+const jb=document.createElement('button');jb.id='jmp';jb.hidden=true;jb.textContent='↗';jb.title='Jump to definition';document.body.append(jb);
+jb.addEventListener('mousedown',e=>e.preventDefault());
+let jc=[],jt,jk=0;const coarse=matchMedia('(pointer:coarse)'),PC=new Map(),lineAt=x=>cm.posFromIndex(x).line,nrm=n=>n.name.replace(/^static /,''),
+ isDef=n=>/^(fn|method|getter|setter|class)$/.test(n.kind);
+const cand=(n,fid,txt)=>({fid:fid||S.f,a:n.a,lab:n.kind+' '+nrm(n)+(n.path?'  '+n.path:''),l:txt?(txt.slice(0,n.a).match(/\n/g)||[]).length+1:lineAt(n.a)+1});
+function chainAt(i){const o=[];let l=R.scripts;for(;;){const n=l.find(x=>i>=x.a&&i<=x.b);if(!n)break;o.push(n);l=n.c||[]}return o}
+/* 1) inside the same block or class, innermost first  2) anywhere else in this file */
+function localDefs(w,i){const ok=n=>isDef(n)&&nrm(n)==w&&!(n.a<=i&&lineAt(n.a)==lineAt(i)),ch=chainAt(i);
+ for(let k=ch.length-1;k>=0;k--){const h=(ch[k].c||[]).filter(ok);if(h.length)return h.map(n=>cand(n))}
+ return R.fns.filter(ok).map(n=>cand(n))}
+/* 3) other files in the project */
+async function otherDefs(w){const out=[];for(const f of cP().files){if(f.id==S.f||!/\.(html?|js)$/i.test(f.name)||!f.text.includes(w))continue;
+ let c=PC.get(f.id);if(!c||c.t!==f.text){c={t:f.text,r:await wreq({t:'parse',text:f.text,js:/\.js$/i.test(f.name),css:false})};PC.set(f.id,c)}
+ ((c.r&&c.r.fns)||[]).filter(n=>isDef(n)&&nrm(n)==w).forEach(n=>out.push({...cand(n,f.id,f.text),file:f.name}))}return out}
+function jHide(){jb.hidden=true;jc=[]}
+function jPlace(){const c=cm.cursorCoords(cm.getCursor('to'),'window'),r=cm.getWrapperElement().getBoundingClientRect();
+ if(c.top<r.top||c.bottom>r.bottom)return void(jb.hidden=true);jb.style.left=Math.max(4,Math.min(innerWidth-44,c.left-17))+'px';jb.style.top=Math.max(4,c.top-52)+'px';if(jb.hidden){jb.classList.add('wait');setTimeout(()=>jb.classList.remove('wait'),450)}jb.hidden=false}
+function jRefresh(){clearTimeout(jt);const my=++jk;jt=setTimeout(async()=>{
+ if(!coarse.matches||!cm.somethingSelected()||MD.length||!$('#run').hidden||document.body.classList.contains('open'))return jHide();
+ const a=cm.getCursor('from'),b=cm.getCursor('to'),w=cm.getSelection();if(a.line!=b.line||!/^[A-Za-z_$][\w$]*$/.test(w)||w.length>60)return jHide();
+ let c=localDefs(w,cm.indexFromPos(a));if(!c.length&&cP().files.length>1)c=await otherDefs(w);
+ if(my!=jk||!c.length)return jHide();jc=c;jPlace()},160)}
+let fingerDown=false;
+addEventListener('touchstart',()=>{fingerDown=true},{passive:true,capture:true});
+addEventListener('touchend',()=>{fingerDown=false;if(cm.somethingSelected())jRefresh()},{passive:true,capture:true});
+addEventListener('touchcancel',()=>{fingerDown=false},{passive:true,capture:true});
+jb.setAttribute('tabindex','-1');jb.addEventListener('touchstart',e=>e.preventDefault(),{passive:false});
+cm.on('cursorActivity',()=>{if(fingerDown)jHide();else jRefresh()});cm.on('scroll',()=>{if(!jb.hidden)jPlace()});
+/* safety net: on phones the keyboard/IME can "commit" over a word that was just long-press selected and wipe it.
+   If a selection that was made a moment ago is replaced by nothing without a real Backspace/Delete, cancel that change. */
+const IL=[],ilog=m=>{IL.push(((Date.now()%100000)/1000).toFixed(2)+' '+m);if(IL.length>60)IL.shift()};
+let selTxt='',lastOK=0;const okNow=()=>Date.now()-lastOK<1500;
+const fld=cm.getInputField();
+/* signals that mean "the person really asked to delete/cut" */
+fld.addEventListener('keydown',e=>{ilog('key '+e.key+' '+e.keyCode);if(e.key=='Backspace'||e.key=='Delete'||(e.keyCode==8||e.keyCode==46))lastOK=Date.now()},true);
+['cut'].forEach(t=>document.addEventListener(t,()=>{ilog(t);lastOK=Date.now()},true));
+fld.addEventListener('beforeinput',e=>{ilog('bi '+e.inputType+(e.isComposing?' (composing)':'')+' "'+String(e.data||'').slice(0,12)+'"');
+ if(!e.isComposing&&/^(deleteContent(Backward|Forward)|deleteByCut|deleteWord|deleteSoftLine|deleteHardLine)/.test(e.inputType||''))lastOK=Date.now()},true);
+fld.addEventListener('compositionstart',()=>ilog('compStart'),true);fld.addEventListener('compositionend',e=>ilog('compEnd "'+String(e.data||'').slice(0,12)+'"'),true);
+document.addEventListener('selectionchange',()=>{if(coarse.matches){const t=getSelection().toString();if(t!==selTxt){ilog('sel "'+t.slice(0,20)+'"')}}});
+cm.on('cursorActivity',()=>{selTxt=cm.somethingSelected()?cm.getSelection():''});
+/* key-bar / menu buttons count as real actions */
+document.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('#kb,#menu,.mdl,#jmp'))lastOK=Date.now()},true);
+cm.on('beforeChange',(c,ch)=>{if(!coarse.matches||ch.origin=='undo'||ch.origin=='redo'||ch.origin=='ai'||ch.origin=='setValue'||ch.origin=='+delete'&&okNow())return;
+ const gone=ch.text.join('\n').length==0,rng=c.listSelections().some(r=>{const f=r.from(),t=r.to();return (f.line!=t.line||f.ch!=t.ch)&&f.line==ch.from.line&&f.ch<=ch.from.ch&&t.line==ch.to.line&&t.ch>=ch.to.ch});
+ ilog('chg '+ch.origin+' gone='+gone+' inSel='+rng+' ok='+okNow());
+ if(gone&&rng&&!okNow()&&!ch.origin.startsWith('paste')){ch.cancel();toast('Blocked a stray delete of your selection');ilog('BLOCKED');resync(c.listSelections())}});
+/* the browser already edited the on-screen text before we cancelled, so rebuild CodeMirror's DOM and put the selection back */
+let rsT=[];function resync(sel){rsT.forEach(clearTimeout);rsT=[0,80,250].map(d=>setTimeout(()=>{try{cm.refresh();cm.setSelections(sel.map(r=>({anchor:r.anchor,head:r.head})),0,{scroll:false});cm.display.input.reset(true);
+  const st=cm.getWrapperElement().querySelector('.CodeMirror-code');if(st&&cm.getValue().length&&!st.textContent.length)cm.refresh()}catch(e){}},d))}
+/* on phones, per-line active-line restyling on every selection change is a known trigger for keyboard glitches */
+if(coarse.matches)cm.setOption('styleActiveLine',false);
+{const b=document.createElement('button');b.textContent='Input debug log';b.onclick=()=>{$('#menu').hidden=true;
+ const m=openMdl('<div class="mh"><b>Input log</b><button class="x" title="Close">✕</button></div><div class="mb" style="padding:8px;font:11px/1.4 monospace;white-space:pre-wrap;word-break:break-all"></div>','sm');m.querySelector('.mb').textContent=IL.slice().reverse().join('\n')||'(empty)'};$('#menu').append(b)}
+function goIdx(fid,a){jbPush();unfocus();if(fid!=S.f)openFile(S.p,fid,true);const p=cm.posFromIndex(a);cm.setCursor(p);cm.scrollIntoView({from:p,to:p},cm.getScrollInfo().clientHeight/3);flash(p.line);closeDrawer()}
+function pickDef(list){const m=openMdl('<div class="mh"><b>Jump to</b><button class="x" title="Close">✕</button></div><div class="mb" style="padding:8px"></div>','sm'),b=m.querySelector('.mb');
+ list.forEach(c=>{const x=document.createElement('button');x.style.cssText='display:block;width:100%;text-align:left;height:auto;padding:10px';x.textContent=c.lab+'  ('+(c.file?c.file+', ':'')+'line '+c.l+')';x.onclick=()=>{closeMdl(m);goIdx(c.fid,c.a)};b.append(x)})}
+jb.onclick=()=>{const l=jc;jHide();l.length==1?goIdx(l[0].fid,l[0].a):l.length&&pickDef(l)};
+/* typing key bar inside the block editor (follows the key bar toggle in the menu) */
+const KB2=[['⇥',e=>e.replaceSelection('  ')],['←','goCharLeft'],['→','goCharRight'],['↑','goLineUp'],['↓','goLineDown'],['{}'],['()'],['[]'],["''"],['""'],['`'],['=>'],['='],[';'],['.'],[','],[':'],['$'],['/'],['!'],['&&'],['||'],['<>'],['</'],['//','toggleComment'],['⌫ln','deleteLine'],['↶','undo'],['↷','redo']];
+function kbFill(el,ed){KB2.forEach(([l,a])=>{const b=document.createElement('button');b.textContent=l;b.addEventListener('mousedown',e=>e.preventDefault());
+ b.onclick=()=>{if(typeof a=='function')a(ed);else if(a)ed.execCommand(a);else{ed.replaceSelection(l);if(PAIR.has(l))ed.execCommand('goCharLeft')}ed.focus()};el.append(b)})}
+/* ---------- v5: format, minify, palette, phone tools ---------- */
+let FO={w:2,pw:100,semi:true,sq:false,mg:true,dc:false,ch:150000},FW,FJ=0,XS=[];
+try{Object.assign(FO,JSON.parse(localStorage.getItem('tenon-fmt')))}catch(e){}
+const kindOf=n=>/\.(m?js|cjs)$/i.test(n)?'js':/\.css$/i.test(n)?'css':/\.json$/i.test(n)?'json':'html';
+function runJob(op,k,s,label){return new Promise(res=>{const id=++FJ,w=FW||(FW=new Worker(URL.createObjectURL(new Blob([$('#fmtwk').textContent],{type:'text/javascript'}))));
+ const m=openMdl('<div class="mh"><b></b></div><div class="mb"><p class="fs">Loading tools…</p><progress style="width:100%" max="1" value="0"></progress></div><div class="mf"><span class="sp"></span><button class="cx">Cancel</button></div>','sm');
+ m.querySelector('b').textContent=label;const pg=m.querySelector('progress'),tx=m.querySelector('.fs');
+ m.querySelector('.cx').onclick=()=>{closeMdl(m,1);FW=null;w.terminate();res(null)};
+ w.onmessage=e=>{const d=e.data;if(d.id!=id)return;if(d.t=='p'){pg.value=d.p;tx.textContent=Math.round(d.p*100)+'%'+(d.n>1?' · part '+d.i+' of '+d.n:'')}else{closeMdl(m,1);res(d)}};
+ w.onerror=e=>{e.preventDefault&&e.preventDefault();closeMdl(m,1);FW=null;res({t:'err',m:'Could not start the formatter (offline, or the library host is blocked).'})};
+ w.postMessage({t:'job',id,op,k,s,o:FO})})}
+function applyRange(a,b,nw){const old=cm.getRange(cm.posFromIndex(a),cm.posFromIndex(b));if(old===nw)return false;const m=Math.min(old.length,nw.length);let p=0,q=0;
+ while(p<m&&old.charCodeAt(p)==nw.charCodeAt(p))p++;while(q<m-p&&old.charCodeAt(old.length-1-q)==nw.charCodeAt(nw.length-1-q))q++;
+ cm.replaceRange(nw.slice(p,nw.length-q),cm.posFromIndex(a+p),cm.posFromIndex(b-q));return true}
+async function doFormat(){unfocus();flush();const nm=cF().name,all=cm.getValue();let a=0,b=all.length,k=kindOf(nm);const sel=cm.somethingSelected();
+ if(sel){a=cm.indexFromPos(cm.getCursor('from'));b=cm.indexFromPos(cm.getCursor('to'));if(k=='html'){const im=l=>l.some(x=>a>=x.a&&b<=x.b);k=im(R.styles)?'css':im(R.scripts)?'js':'html'}}
+ const d=await runJob('f',k,all.slice(a,b),'Formatting '+(sel?'selection':nm));if(!d)return;
+ if(d.t=='err')return sure(d.m,'OK',0,'Could not format');
+ const out=sel?d.out.replace(/\n$/,''):d.out,ch=applyRange(a,b,out);if(ch)flash(cm.getCursor().line);
+ if(d.fail)sure(d.fail+' part(s) were left as they were: '+d.errs.slice(0,3).join(' • '),'OK',0,ch?'Partly formatted':'Nothing formatted');else toast(ch?'Formatted. Undo (↶) reverts it':'Already formatted')}
+const gz=async t=>{try{return(await new Response(new Blob([t]).stream().pipeThrough(new CompressionStream('gzip'))).blob()).size}catch(e){return 0}};
+async function doMinify(){unfocus();flush();const s=cm.getValue(),nm=cF().name,d=await runJob('m',kindOf(nm),s,'Minifying '+nm);if(!d)return;
+ if(d.t=='err')return sure(d.m,'OK',0,'Could not minify');
+ const en=t=>new TextEncoder().encode(t).length,b0=en(s),b1=en(d.out),z0=await gz(s),z1=await gz(d.out),kb=n=>(n/1024).toFixed(n>1e5?0:1)+' KB',mn=nm.replace(/(\.\w+)?$/,'.min$1');
+ const m=openMdl('<div class="mh"><b>Minified</b><button class="x" title="Close">✕</button></div><div class="mb"></div><div class="mf"><button class="nw ok">Save as new file</button><button class="rp">Replace this file</button><button class="dw">Download</button></div>','sm');
+ m.querySelector('.mb').textContent=kb(b0)+' → '+kb(b1)+' ('+Math.max(0,Math.round(100-b1*100/(b0||1)))+'% smaller)'+(z1?'. Gzipped: '+kb(z0)+' → '+kb(z1)+'.':'.')+(d.fail?' '+d.fail+' part(s) were left as they were: '+d.errs.slice(0,2).join(' • '):'');
+ m.querySelector('.nw').onclick=()=>{closeMdl(m);const g={id:uid(),name:mn,text:d.out};cP().files.push(g);openFile(S.p,g.id);toast('Saved as '+mn)};
+ m.querySelector('.rp').onclick=()=>{closeMdl(m);applyRange(0,s.length,d.out);toast('Replaced. Undo (↶) reverts it')};
+ m.querySelector('.dw').onclick=()=>dl(mn,d.out)}
+function fmtSet(){const m=openMdl('<div class="mh"><b>Format &amp; minify options</b><button class="x" title="Close">✕</button></div><div class="mb" style="max-width:none"><p><label>Indent<select id="fo1"><option value="2">2 spaces</option><option value="4">4 spaces</option><option value="0">Tabs</option></select></label></p><p><label>Line width<input id="fo2" type="number" min="40" max="300"></label></p><p><label>Semicolons<input id="fo3" type="checkbox"></label></p><p><label>Single quotes (JS)<input id="fo4" type="checkbox"></label></p><p><label>Minify: shorten local names<input id="fo5" type="checkbox"></label></p><p><label>Minify: drop console.* and debugger<input id="fo6" type="checkbox"></label></p><p class="e">Big scripts are processed in pieces so the page stays responsive. A piece with a syntax error is left untouched.</p></div><div class="mf"><span class="sp"></span><button class="cx">Cancel</button><button class="ok">Save</button></div>','sm'),g=i=>m.querySelector('#fo'+i);
+ g(1).value=FO.w;g(2).value=FO.pw;g(3).checked=FO.semi;g(4).checked=FO.sq;g(5).checked=FO.mg;g(6).checked=FO.dc;
+ m.querySelector('.cx').onclick=()=>closeMdl(m);m.querySelector('.ok').onclick=()=>{FO={...FO,w:+g(1).value,pw:Math.max(40,+g(2).value||100),semi:g(3).checked,sq:g(4).checked,mg:g(5).checked,dc:g(6).checked};try{localStorage.setItem('tenon-fmt',JSON.stringify(FO))}catch(e){}closeMdl(m);toast('Saved')}}
+/* selection helpers that beat dragging handles on a phone */
+function expandSel(){const a=cm.getCursor('from'),b=cm.getCursor('to'),ia=cm.indexFromPos(a),ib=cm.indexFromPos(b),C=[],w=cm.findWordAt(a);XS.push([a,b]);
+ C.push([w.anchor,w.head],[{line:a.line,ch:0},{line:b.line,ch:cm.getLine(b.line).length}]);
+ [...R.scripts,...R.styles].forEach(function f(n){if(n.a<=ia&&n.b>=ib&&n.b>n.a){C.push([cm.posFromIndex(n.a),cm.posFromIndex(n.b)]);(n.c||[]).forEach(f)}});
+ C.push([{line:0,ch:0},{line:cm.lastLine(),ch:cm.getLine(cm.lastLine()).length}]);
+ const z=C.map(([x,y])=>[cm.indexFromPos(x),cm.indexFromPos(y),x,y]).filter(r=>r[0]<=ia&&r[1]>=ib&&r[1]-r[0]>ib-ia).sort((p,q)=>p[1]-p[0]-(q[1]-q[0]))[0];
+ if(z)cm.setSelection(z[2],z[3]);else{XS.pop();toast('Whole file is selected')}}
+function shrinkSel(){const r=XS.pop();if(!r)return toast('Nothing to shrink');cm.setSelection(r[0],r[1])}
+function selNext(){if(!cm.somethingSelected()){const w=cm.findWordAt(cm.getCursor());return cm.setSelection(w.anchor,w.head)}
+ const t=cm.getSelection(),L=cm.listSelections();let c=cm.getSearchCursor(t,L[L.length-1].to());
+ if(!c.findNext()){c=cm.getSearchCursor(t,{line:0,ch:0});if(!c.findNext())return}
+ if(L.some(r=>r.from().line==c.from().line&&r.from().ch==c.from().ch))return toast('No more matches');
+ cm.addSelection(c.from(),c.to());cm.scrollIntoView(c.to(),80)}
+function selAll(){if(!cm.somethingSelected()){const w=cm.findWordAt(cm.getCursor());cm.setSelection(w.anchor,w.head)}
+ const t=cm.getSelection(),c=cm.getSearchCursor(t,{line:0,ch:0}),o=[];while(c.findNext()&&o.length<3000)o.push({anchor:c.from(),head:c.to()});cm.setSelections(o);toast(o.length+' matches selected')}
+function onLines(fn){const s=cm.somethingSelected(),f=cm.getCursor('from'),t=cm.getCursor('to'),a=s?f.line:0,b=s?t.line-(t.ch==0&&t.line>a?1:0):cm.lastLine(),A={line:a,ch:0},B={line:b,ch:cm.getLine(b).length};
+ cm.replaceRange(fn(cm.getRange(A,B).split('\n')).join('\n'),A,B);toast(s?'Done (selected lines)':'Done (whole file)')}
+const sy=fn=>()=>{if(!cm.somethingSelected())return toast('Select some text first');cm.replaceSelections(cm.getSelections().map(fn))},
+ cpy=()=>{const t=cm.getSelection()||cm.getLine(cm.getCursor().line)+'\n';navigator.clipboard.writeText(t).then(()=>toast('Copied'),()=>toast('Copy blocked by the browser'))},
+ CMD=[['Format selection or whole file',doFormat],['Minify file…',doMinify],['Format & minify options…',fmtSet],['Expand selection (word › line › block)',expandSel],['Shrink selection',shrinkSel],
+ ['Select next match',selNext],['Select all matches',selAll],['Select line',()=>{const c=cm.getCursor();cm.setSelection({line:c.line,ch:0},{line:c.line+1,ch:0})}],['Select all',()=>cm.execCommand('selectAll')],
+ ['Copy (selection or line)',cpy],['Cut (selection or line)',()=>{cpy();cm.getSelection()?cm.replaceSelection(''):cm.execCommand('deleteLine')}],
+ ['Paste',()=>navigator.clipboard.readText().then(t=>cm.replaceSelection(t),()=>toast('Paste blocked. Long-press in the editor instead'))],
+ ['Copy whole file',()=>navigator.clipboard.writeText(cm.getValue()).then(()=>toast('File copied'),()=>toast('Copy blocked by the browser'))],
+ ['Delete line',()=>cm.execCommand('deleteLine')],['Join lines',()=>onLines(l=>[l.map((x,i)=>i?x.trim():x.trimEnd()).join(' ')])],
+ ['Sort lines A→Z',()=>onLines(l=>l.sort((x,y)=>x.localeCompare(y)))],['Reverse lines',()=>onLines(l=>l.reverse())],['Remove duplicate lines',()=>onLines(l=>[...new Set(l)])],
+ ['Trim trailing spaces',()=>onLines(l=>l.map(x=>x.trimEnd()))],['Tabs → spaces',()=>onLines(l=>l.map(x=>x.replace(/\t/g,'  ')))],['Remove blank lines',()=>onLines(l=>l.filter(x=>x.trim()))],
+ ['Auto-indent',()=>{cm.somethingSelected()||cm.execCommand('selectAll');cm.execCommand('indentAuto')}],['UPPERCASE',sy(t=>t.toUpperCase())],['lowercase',sy(t=>t.toLowerCase())],
+ ...[['( )','(',')'],['[ ]','[',']'],['{ }','{','}'],['" "','"','"'],["' '","'","'"],['` `','`','`'],['<div>','<div>','</div>']].map(([n,l,r])=>['Wrap selection in '+n,sy(t=>l+t+r)]),
+ ['Go to top',()=>cm.execCommand('goDocStart')],['Go to bottom',()=>cm.execCommand('goDocEnd')],
+ ['File stats',()=>toast(cm.lineCount().toLocaleString()+' lines · '+cm.getValue().length.toLocaleString()+' chars')]];
+function palette(){const all=[...CMD,...[...$('#menu').children].map(b=>[b.textContent,()=>b.click()])],
+ m=openMdl('<div class="mh"><b>Commands</b><button class="x" title="Close">✕</button></div><div style="padding:8px 12px"><input class="dq" placeholder="Type to filter…" autocomplete="off"></div><div class="mb pal" style="max-width:none;padding:4px 8px"></div>','big'),q=m.querySelector('input'),l=m.querySelector('.pal');
+ const draw=()=>{l.textContent='';const t=q.value.toLowerCase();all.filter(c=>c[0].toLowerCase().includes(t)).forEach(c=>{const b=document.createElement('button');b.textContent=c[0];b.onclick=()=>{closeMdl(m);setTimeout(c[1],30)};l.append(b)})};
+ q.oninput=draw;q.onkeydown=e=>{if(e.key=='Enter'&&l.firstChild)l.firstChild.click()};draw()}
+cm.addKeyMap({'Shift-Alt-F':doFormat,'Ctrl-Shift-P':palette,'Cmd-Shift-P':palette,'Shift-Alt-Right':expandSel,'Shift-Alt-Left':shrinkSel,'Alt-D':selNext});
+[['Command palette',palette],['Format selection or file',doFormat],['Minify file…',doMinify],['Format & minify options…',fmtSet]].forEach(([l,f])=>{const b=document.createElement('button');b.textContent=l;b.onclick=()=>{$('#menu').hidden=true;f()};$('#menu').append(b)});
+[['⌘',palette,'Command palette'],['Fmt',doFormat,'Format selection or file'],['⤢',expandSel,'Expand selection'],['⤡',shrinkSel,'Shrink selection'],['⎘',cpy,'Copy']].reverse()
+ .forEach(([l,f,t])=>{const b=document.createElement('button');b.textContent=l;b.title=t;b.addEventListener('mousedown',e=>e.preventDefault());b.onclick=()=>{f();if(!MD.length)cm.focus()};$('#kb').prepend(b)});
+/* very large files: switch off the features that cost the most per keystroke */
+function bigMode(){const big=cF().text.length>1.5e6||cm.lineCount()>40000;cm.setOption('foldGutter',!big);cm.setOption('autoCloseTags',!big);cm.setOption('matchBrackets',!big);if(big)toast('Large file: folding and bracket matching are off')}
+{const o1=openFile;openFile=function(...a){o1(...a);bigMode()}}
+/* ---------- GitHub: connect, change preview, push, pull ---------- */
+const GH={tok:'',user:'',repos:null,ac:null,bac:null},GHK='gh:token',SHAC=new WeakMap(),ghEnc=new TextEncoder(),
+ GHBIN=/\.(png|jpe?g|gif|webp|ico|bmp|tiff?|avif|pdf|zip|gz|tgz|bz2|xz|7z|rar|jar|woff2?|ttf|otf|eot|mp[34]|m4a|wav|ogg|webm|mov|avi|mkv|flac|wasm|bin|exe|dll|so|dylib|class|pyc|psd|sqlite3?|db)$/i;
+const kvDel=async k=>{const db=await DB;if(db)try{db.transaction('kv','readwrite').objectStore('kv').delete(k)}catch(e){}};
+const ghBp=b=>b.split('/').map(encodeURIComponent).join('/'),ghSel=()=>GH.repos&&GH.repos.find(x=>x.full==$('#ghRp').value);
+/* modals can be locked while a request is past the point of no return */
+{const c0=closeMdl;closeMdl=function(m,f){m=m||MD[MD.length-1];if(m&&m._lock&&!f)return true;return c0(m,f)}}
+/* git blob SHA-1 (SubtleCrypto when available, small JS fallback on insecure origins) */
+function ghSha1(u){const l=u.length,n=((l+8)>>>6)+1,w=new Int32Array(n*16),x=new Int32Array(80);for(let i=0;i<l;i++)w[i>>2]|=u[i]<<(24-(i&3)*8);w[l>>2]|=0x80<<(24-(l&3)*8);w[n*16-1]=l*8;
+ let a0=1732584193,b0=-271733879,c0=-1732584194,d0=271733878,e0=-1009589776;
+ for(let i=0;i<w.length;i+=16){for(let j=0;j<80;j++){if(j<16)x[j]=w[i+j];else{const t=x[j-3]^x[j-8]^x[j-14]^x[j-16];x[j]=t<<1|t>>>31}}
+  let a=a0,b=b0,c=c0,d=d0,e=e0;
+  for(let j=0;j<80;j++){const f=j<20?(b&c)|(~b&d):j<40?b^c^d:j<60?(b&c)|(b&d)|(c&d):b^c^d,k=j<20?1518500249:j<40?1859775393:j<60?-1894007588:-899497514,t=((a<<5|a>>>27)+f+e+k+x[j])|0;e=d;d=c;c=b<<30|b>>>2;b=a;a=t}
+  a0=a0+a|0;b0=b0+b|0;c0=c0+c|0;d0=d0+d|0;e0=e0+e|0}
+ return[a0,b0,c0,d0,e0].map(v=>(v>>>0).toString(16).padStart(8,'0')).join('')}
+async function ghBlobSha(t){const b=ghEnc.encode(t),h=ghEnc.encode('blob '+b.length+'\0'),u=new Uint8Array(h.length+b.length);u.set(h);u.set(b,h.length);
+ if(window.crypto&&crypto.subtle)return[...new Uint8Array(await crypto.subtle.digest('SHA-1',u))].map(x=>x.toString(16).padStart(2,'0')).join('');return ghSha1(u)}
+/* local snapshot: path -> {f,sha,crlf}. Hashes are cached per file object and only recomputed when its text changes */
+async function ghSnap(p,B){flush();const m=new Map();
+ await Promise.all(p.files.map(async f=>{const path=f.name.replace(/^\/+/,''),crlf=!!(B[path]&&B[path][1]),k=SHAC.get(f);let sha;
+  if(k&&k.t===f.text&&k.c===crlf)sha=k.s;else{sha=await ghBlobSha(crlf?f.text.replace(/\n/g,'\r\n'):f.text);SHAC.set(f,{t:f.text,c:crlf,s:sha})}
+  m.set(path,{f,sha,crlf})}));return m}
+const ghSer=l=>l.crlf?l.f.text.replace(/\n/g,'\r\n'):l.f.text;
+/* GitHub REST */
+async function gh(path,o={}){let r;
+ try{r=await fetch('https://api.github.com'+path,{method:o.method||'GET',signal:o.signal,headers:{Authorization:'Bearer '+GH.tok,Accept:o.raw?'application/vnd.github.raw+json':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28',...(o.body?{'Content-Type':'application/json'}:{})},body:o.body?JSON.stringify(o.body):undefined})}
+ catch(e){if(e.name=='AbortError')throw e;throw new Error('Could not reach GitHub. Check your connection.')}
+ if(!r.ok){let m='';try{m=(await r.json()).message||''}catch(e){}const rl=r.headers.get('x-ratelimit-remaining')==='0';
+  throw Object.assign(new Error(r.status==401?'GitHub rejected the token (401). It may be wrong, expired or revoked.':rl?'GitHub rate limit reached. Try again after '+new Date(+r.headers.get('x-ratelimit-reset')*1000).toLocaleTimeString()+'.':r.status==404?'Not found (404). The repository or branch is missing, or the token cannot access it.':r.status==409?(m||'Conflict')+' (an empty repository needs a first commit on GitHub before Tenon can push).':m||'GitHub error '+r.status),{status:r.status})}
+ return o.raw?r:r.status==204?null:r.json()}
+async function ghPool(items,n,fn,sg){let i=0,err;await Promise.all(Array.from({length:Math.min(n,items.length)},async()=>{while(!err&&i<items.length&&!sg.aborted){try{await fn(items[i++])}catch(e){err=err||e}}}));if(err)throw err;if(sg.aborted)throw new DOMException('Cancelled','AbortError')}
+const ghHead=async(rp,br,sg)=>{const ref=await gh(`/repos/${rp.full}/git/ref/heads/${ghBp(br)}`,{signal:sg}),c=await gh(`/repos/${rp.full}/git/commits/${ref.object.sha}`,{signal:sg});return{commit:ref.object.sha,tree:c.tree.sha}};
+const ghTree=(rp,sha,sg)=>gh(`/repos/${rp.full}/git/trees/${sha}?recursive=1`,{signal:sg});
+/* dialogs: all built on the app's own modal system */
+function ghNote(title,msg){return new Promise(res=>{const m=openMdl('<div class="mh"><b></b></div><div class="mb"><p></p></div><div class="mf"><span class="sp"></span><button class="ok">OK</button></div>','sm');
+ m.querySelector('b').textContent=title;m.querySelector('p').textContent=msg;m._c=()=>res();m.querySelector('.ok').onclick=()=>closeMdl(m);setTimeout(()=>m.querySelector('.ok').focus(),30)})}
+function ghBusy(title){const ac=new AbortController(),m=openMdl('<div class="mh"><b></b></div><div class="mb"><p class="bs"></p><progress style="width:100%" max="1"></progress></div><div class="mf"><span class="sp"></span><button class="cx">Cancel</button></div>','sm'),
+ t=m.querySelector('.bs'),pg=m.querySelector('progress'),cx=m.querySelector('.cx');m._nb=1;m._c=()=>ac.abort();m.querySelector('b').textContent=title;cx.onclick=()=>closeMdl(m);
+ return{sig:ac.signal,set(x,f){t.textContent=x;if(f==null)pg.removeAttribute('value');else pg.value=f},lock(){m._lock=1;cx.hidden=true},done(){m._lock=0;if(MD.includes(m))closeMdl(m,1)}}}
+let ghLk=0;const ghRun=f=>async()=>{if(ghLk)return;ghLk=1;try{await f()}catch(e){if(!e||e.name!='AbortError')ghNote('GitHub',(e&&e.message)||String(e))}finally{ghLk=0}};
+/* line diff: trims common head/tail, LCS on the middle (falls back to replace-all when huge) */
+function ghDiff(o,n){const a=o===''?[]:o.split('\n'),b=n===''?[]:n.split('\n'),na=a.length,nb=b.length;let s=0,e=0;
+ while(s<na&&s<nb&&a[s]===b[s])s++;while(e<na-s&&e<nb-s&&a[na-1-e]===b[nb-1-e])e++;
+ const A=a.slice(s,na-e),B=b.slice(s,nb-e),x=A.length,y=B.length,ops=[],c0=Math.min(3,s),c1=Math.min(3,e);
+ for(let i=s-c0;i<s;i++)ops.push([' ',a[i]]);
+ if(!x||!y||x*y>3e6){A.forEach(t=>ops.push(['-',t]));B.forEach(t=>ops.push(['+',t]))}
+ else{const W=y+1,T=new Uint32Array((x+1)*W);for(let i=x-1;i>=0;i--)for(let j=y-1;j>=0;j--)T[i*W+j]=A[i]===B[j]?T[(i+1)*W+j+1]+1:Math.max(T[(i+1)*W+j],T[i*W+j+1]);
+  let i=0,j=0;while(i<x&&j<y){if(A[i]===B[j]){ops.push([' ',A[i]]);i++;j++}else if(T[(i+1)*W+j]>=T[i*W+j+1])ops.push(['-',A[i++]]);else ops.push(['+',B[j++]])}
+  while(i<x)ops.push(['-',A[i++]]);while(j<y)ops.push(['+',B[j++]])}
+ for(let i=0;i<c1;i++)ops.push([' ',a[na-e+i]]);let add=0,del=0;ops.forEach(p=>{if(p[0]=='+')add++;else if(p[0]=='-')del++});return{ops,add,del,s:s-c0+1}}
+function ghDiffEl(r){const box=document.createElement('div'),pre=document.createElement('pre'),ops=r.ops,pad=n=>String(n).padStart(5);let nl=r.s,n=0,i=0;box.className='aiD';
+ const put=(c,t)=>{const x=document.createElement('div');x.className=c;x.textContent=t;pre.append(x);n++};
+ if(!r.add&&!r.del)put('dc','No line changes (only line endings or the file end differ).');
+ while(i<ops.length&&n<600){const o=ops[i];
+  if(o[0]!=' '){put(o[0]=='-'?'dr':'da',(o[0]=='-'?'     ':pad(nl))+' '+o[0]+' '+o[1]);if(o[0]=='+')nl++;i++;continue}
+  let j=i;while(j<ops.length&&ops[j][0]==' ')j++;const col=i>0&&j<ops.length&&j-i>7;
+  for(let k=i;k<j;k++){if(col&&k==i+3){const sk=j-i-6;put('dc','⋯ '+sk+' unchanged lines');nl+=sk;k=j-4;continue}put('dc',pad(nl)+'   '+ops[k][1]);nl++}i=j}
+ if(i<ops.length)put('dc','… diff truncated, '+(ops.length-i)+' more lines');box.append(pre);return box}
+/* compare project, GitHub head and the last synced state (3 SHAs per path) */
+async function ghPlan(p,rp,br,sg){
+ if(rp.empty){const L=await ghSnap(p,{}),ch=[...L].map(([path,l])=>({path,st:'A',l,rm:null,cf:false})).sort((a,b)=>a.path<b.path?-1:1);return{h:null,R:new Map(),B:{},L,ch}}
+ const h=await ghHead(rp,br,sg),t=await ghTree(rp,h.tree,sg);if(t.truncated)throw new Error('This repository is too large for Tenon to push safely.');
+ const R=new Map(t.tree.filter(x=>x.type=='blob').map(x=>[x.path,x])),lk=p.gh&&p.gh.o==rp.o&&p.gh.r==rp.r&&p.gh.b==br,Bs=lk?await kvGet('gh:b:'+p.id):null,B=(Bs&&Bs.f)||{},L=await ghSnap(p,B),ch=[];
+ L.forEach((l,path)=>{const rm=R.get(path),b=B[path];if(rm&&rm.sha==l.sha)return;if(b&&b[0]==l.sha)return;ch.push({path,st:rm?'M':'A',l,rm,cf:!!rm&&(!b||rm.sha!=b[0])})});
+ for(const path in B){if(L.has(path))continue;const rm=R.get(path);if(rm)ch.push({path,st:'D',rm,cf:rm.sha!=B[path][0]})}
+ ch.sort((a,b)=>a.path<b.path?-1:1);return{h,R,B,L,ch}}
+async function ghMark(p,rp,br,pl,done,commit){const F={...pl.B};pl.L.forEach((l,path)=>{const rm=pl.R.get(path);if(done.has(path)||(rm&&rm.sha==l.sha))F[path]=[l.sha,l.crlf?1:0]});
+ done.forEach(path=>{if(!pl.L.has(path))delete F[path]});await kvPutW('gh:b:'+p.id,{f:F,c:commit});p.gh={o:rp.o,r:rp.r,b:br};persist();ghStat()}
+/* push preview: message, description, per-file checkboxes, lazy line diffs */
+function ghPushDlg(p,rp,br,pl,ini){return new Promise(res=>{
+ const m=openMdl('<div class="mh"><b></b><button class="x" title="Close">✕</button></div><div class="mb"><div class="gsum"></div><input type="text" class="dq gm" placeholder="Commit message (required)" maxlength="200" autocomplete="off"><textarea class="dq gd" rows="3" placeholder="Description (optional)"></textarea><div class="gl"></div></div><div class="mf"><span class="dn"></span><span class="sp"></span><button class="cx">Cancel</button><button class="ok">Push</button></div>','big'),
+  q=s=>m.querySelector(s),ac=new AbortController(),cache=new Map(),sel=new Set(pl.ch.filter(c=>!c.cf)),ok=q('.ok'),msg=q('.gm');let out=null;
+ m._nb=1;m._c=()=>{ac.abort();cache.clear();res(out)};q('b').textContent='Push to '+rp.full+' · '+br;
+ const cnt=k=>pl.ch.filter(c=>c.st==k).length,cf=pl.ch.filter(c=>c.cf).length;
+ q('.gsum').textContent=cnt('M')+' modified · '+cnt('A')+' added · '+cnt('D')+' removed'+(cf?'\n⚠ '+cf+' file'+(cf>1?'s were':' was')+' also changed on GitHub since your last sync. Unchecked so you do not overwrite that work.':'');
+ const sync=()=>{const n=sel.size;ok.textContent=n?'Push '+n+' change'+(n>1?'s':''):'Nothing selected';ok.disabled=!n||!msg.value.trim();q('.dn').textContent=n+' of '+pl.ch.length+' selected'};
+ const get=c=>{let k=cache.get(c);if(!k){k=(async()=>ghDiff(c.st=='A'?'':(await gh(`/repos/${rp.full}/git/blobs/${c.rm.sha}`,{raw:1,signal:ac.signal}).then(r=>r.arrayBuffer()).then(b=>new TextDecoder('utf-8',{ignoreBOM:true}).decode(b))).replace(/\r\n/g,'\n'),c.st=='D'?'':c.l.f.text))();cache.set(c,k);k.catch(()=>cache.delete(c))}return k};
+ const lab=(c,r)=>{c.em.textContent=r.add+r.del?'+'+r.add+' −'+r.del:'≈'};
+ pl.ch.forEach(c=>{const w=document.createElement('div'),h=document.createElement('div'),d=document.createElement('div'),cb=document.createElement('input'),st=document.createElement('b'),nm=document.createElement('span');
+  h.className='r';d.hidden=true;cb.type='checkbox';cb.checked=sel.has(c);cb.onclick=e=>e.stopPropagation();cb.onchange=()=>{cb.checked?sel.add(c):sel.delete(c);sync()};
+  st.className='ic gs gs'+c.st;st.textContent=c.st=='D'?'D':c.st;nm.className='nm';nm.textContent=c.path;nm.title=c.cf?'Also changed on GitHub since your last sync':'';c.em=document.createElement('em');c.em.textContent=c.cf?'⚠':'▸';
+  h.append(cb,st,nm,c.em);w.append(h,d);list.append(w);
+  h.onclick=async()=>{if(!d.hidden){d.hidden=true;return}d.hidden=false;if(d.firstChild)return;d.textContent='Loading…';
+   try{const r=await get(c);d.textContent='';d.append(ghDiffEl(r));lab(c,r)}catch(e){if(e.name!='AbortError')d.textContent='Could not load this file: '+e.message}}});
+ const list=q('.gl');
+ ghPool(pl.ch.slice(0,40),4,async c=>{try{lab(c,await get(c))}catch(e){if(e.name!='AbortError')c.em.textContent='?'}},ac.signal).catch(()=>{});
+ if(ini)msg.value=ini;msg.oninput=sync;q('.cx').onclick=()=>closeMdl(m);
+ ok.onclick=async()=>{const ch=pl.ch.filter(c=>sel.has(c)),n=ch.length,k=ch.filter(c=>c.cf).length,lk=p.gh&&(p.gh.o!=rp.o||p.gh.r!=rp.r)?'\n\nThis project is linked to '+p.gh.o+'/'+p.gh.r+'. It will be linked to '+rp.full+' instead.':'';
+  if(pl.h&&!await sure('Push '+n+' change'+(n>1?'s':'')+' to '+rp.full+' on branch "'+br+'"?\n\nCheck that this is the right repository.'+(k?'\n\n⚠ '+k+' file'+(k>1?'s':'')+' also changed on GitHub. Those GitHub versions will be overwritten.':'')+lk,'Push',k?1:0,'Push to '+rp.full+'?'))return;
+  out={msg:msg.value.trim(),desc:q('.gd').value.trim(),ch};closeMdl(m,1)};
+ sync();setTimeout(()=>msg.focus(),40)})}
+async function ghPush(ini){const p=cP(),rp=ghSel(),br=$('#ghBr').value;if(!rp||!br)return toast('Choose a repository and branch first');
+ if(rp.empty&&!p.files.length)throw new Error('This project has no files to push yet.');
+ if(!rp.push)throw new Error('Your token has no write access to '+rp.full+'.');if(rp.arch)throw new Error(rp.full+' is archived, so it is read-only.');
+ const bz=ghBusy('Comparing with '+rp.full);bz.set('Reading '+br+' on GitHub…');let pl;try{pl=await ghPlan(p,rp,br,bz.sig)}finally{bz.done()}
+ if(!pl.ch.length){await ghMark(p,rp,br,pl,new Set(),pl.h.commit);return ghNote('Nothing to push','"'+p.name+'" already matches '+rp.full+' on '+br+'.')}
+ const r=await ghPushDlg(p,rp,br,pl,ini);if(!r)return;
+ if(!pl.h)return ghPushFirst(p,rp,br,pl,r);
+ const z=ghBusy('Pushing to '+rp.full),sg=z.sig,api=`/repos/${rp.full}/git`,up=r.ch.filter(c=>c.st!='D'),tree=[];let n=0;
+ try{const cur=await ghHead(rp,br,sg);if(cur.commit!=pl.h.commit)throw new Error('The branch got a new commit on GitHub after the preview. Open Push again to review it.');
+  z.set('Uploading 0 / '+up.length,0);
+  await ghPool(up,4,async c=>{const b=await gh(api+'/blobs',{method:'POST',body:{content:ghSer(c.l),encoding:'utf-8'},signal:sg});tree.push({path:c.path,mode:c.rm?c.rm.mode:'100644',type:'blob',sha:b.sha});z.set('Uploading '+(++n)+' / '+up.length,n/up.length)},sg);
+  r.ch.filter(c=>c.st=='D').forEach(c=>tree.push({path:c.path,mode:c.rm.mode,type:'blob',sha:null}));
+  z.set('Creating commit…');const t=await gh(api+'/trees',{method:'POST',body:{base_tree:pl.h.tree,tree},signal:sg}),
+   cm2=await gh(api+'/commits',{method:'POST',body:{message:r.msg+(r.desc?'\n\n'+r.desc:''),tree:t.sha,parents:[pl.h.commit]},signal:sg});
+  z.lock();z.set('Updating '+br+'…');await gh(api+'/refs/heads/'+ghBp(br),{method:'PATCH',body:{sha:cm2.sha}});
+  await ghMark(p,rp,br,pl,new Set(r.ch.map(c=>c.path)),cm2.sha);toast('Pushed '+r.ch.length+' change'+(r.ch.length>1?'s':'')+' to '+rp.full)}
+ finally{z.done()}}
+/* pull: confirm the repo, download text files with a small pool, create a new project */
+function ghPullDlg(rp,br,n,tot,skip,cur){return new Promise(res=>{
+ const m=openMdl('<div class="mh"><b>Pull from GitHub</b><button class="x" title="Close">✕</button></div><div class="mb"><p class="a" style="font-weight:600;word-break:break-all"></p><p class="b"></p><select class="dq gmode" style="margin:8px 0"></select><div class="gnew"><p>Name of the new project</p><input type="text" class="dq gnm" autocomplete="off"></div><div class="gcur" hidden><p class="c"></p><select class="dq gth" style="margin:8px 0"><option value="">If a file changed in both places: keep mine</option><option value="1">If a file changed in both places: use GitHub\'s</option></select></div></div><div class="mf"><span class="sp"></span><button class="cx">Cancel</button><button class="ok">Pull</button></div>','sm'),
+  q=s=>m.querySelector(s),nm=q('.gnm'),md=q('.gmode'),ok=q('.ok'),th=q('.gth'),pl=cur.pl;let out=null;
+ m._nb=1;m._c=()=>res(out);q('.a').textContent=rp.full+' · branch '+br;
+ md.add(new Option('Pull into a new project','new'));md.add(new Option('Pull into current project: '+cur.p.name,'cur'));md.value=pl.link?'cur':'new';nm.value=rp.r;
+ const sk=skip?' '+skip+' item'+(skip>1?'s':'')+' skipped (binary, over 500 KB, or over the size limit).':'';
+ const sync=()=>{const c=md.value=='cur';q('.gnew').hidden=c;q('.gcur').hidden=!c;
+  if(!c){q('.b').textContent='Is this the right repository? '+n+' text file'+(n>1?'s':'')+' ('+Math.max(1,Math.round(tot/1024))+' KB) will be downloaded into a new project. Your other projects are not touched.'+sk;ok.textContent='Pull into new project';ok.disabled=false;ok.classList.remove('dg');return}
+  const w=th.value=='1',cf=pl.cf.length;th.hidden=!cf;
+  q('.b').textContent='Is this the right repository? Only files that changed on GitHub since your last sync are downloaded.'+sk;
+  q('.c').textContent='Into "'+cur.p.name+'": '+pl.nNew+' new, '+pl.nUpd+' updated, '+pl.del.length+' removed. '+(cf?cf+' file'+(cf>1?'s':'')+' changed in both places.':'No conflicts.')+(pl.link?'':'\nThis project is not synced with this repo yet, so a file with the same name but different content counts as a conflict, and nothing is removed.');
+  const t=pl.nNew+pl.nUpd+pl.del.length+pl.nDir+(w?cf:0);ok.textContent=t?'Pull '+t+' change'+(t>1?'s':''):'Already up to date';ok.disabled=!t;ok.classList.toggle('dg',w&&cf>0)};
+ md.onchange=th.onchange=sync;q('.cx').onclick=()=>closeMdl(m);nm.onkeydown=e=>{if(e.key=='Enter')ok.click()};
+ ok.onclick=()=>{out={mode:md.value,name:nm.value.trim()||rp.r,theirs:th.value=='1'};closeMdl(m,1)};sync();setTimeout(()=>md.focus(),30)})}
+/* what would change if GitHub's files were applied to this project (3 SHAs per path, no downloads) */
+async function ghPullPlan(p,rp,br,t,ent){const link=!!(p.gh&&p.gh.o==rp.o&&p.gh.r==rp.r&&p.gh.b==br),Bs=link?await kvGet('gh:b:'+p.id):null,B=(Bs&&Bs.f)||{},L=await ghSnap(p,B),get=[],cf=[],del=[],same=[],
+  RP=new Set(t.tree.filter(x=>x.type=='blob').map(x=>x.path)),RD=new Set(t.tree.filter(x=>x.type=='tree').map(x=>x.path)),Bd=(Bs&&Bs.d)||[],LD=dirsOf(p);let nNew=0,nUpd=0;
+ ent.forEach(x=>{const l=L.get(x.path),b=B[x.path];
+  if(l&&l.sha==x.sha)return same.push(x);if(b&&b[0]==x.sha)return;
+  if(!l){if(b)cf.push({path:x.path,x});else{get.push(x);nNew++}}else if(b&&l.sha==b[0]){get.push(x);nUpd++}else cf.push({path:x.path,x})});
+ for(const path in B){if(RP.has(path))continue;const l=L.get(path);if(!l)continue;if(l.sha==B[path][0])del.push(path);else cf.push({path,x:null})}
+ const addD=[...RD].filter(d=>!LD.has(d)&&!get.some(x=>x.path.startsWith(d+'/'))),rmD=t.truncated?[]:Bd.filter(d=>!RD.has(d)&&(p.dirs||[]).includes(d)&&!inDir(p,d).length);
+ return{B,L,link,get,cf,del,same,nNew,nUpd,RD,Bd,addD,rmD,nDir:addD.length+rmD.length}}
+async function ghText(rp,x,sg){const r=await gh(`/repos/${rp.full}/git/blobs/${x.sha}`,{raw:1,signal:sg});let s;
+ try{s=new TextDecoder('utf-8',{fatal:true,ignoreBOM:true}).decode(await r.arrayBuffer())}catch(e){return null}
+ const crlf=s.includes('\r\n')&&!/(^|[^\r])\n/.test(s);if(crlf)s=s.replace(/\r\n/g,'\n');return /[\0\r]/.test(s)?null:{s,crlf}}   // binary or mixed line endings -> skipped
+/* mirror GitHub's folders: add the ones that are missing here (also empty-of-text ones, e.g. only images), drop explicit ones that were removed on GitHub */
+function ghDirs(p,RD,Bd,trunc){const have=new Set(p.dirs||[]);let add=0,rm=0;
+ if(!trunc)Bd.forEach(d=>{if(!RD.has(d)&&have.delete(d))rm++});
+ p.dirs=[...have];const cur=dirsOf(p);
+ [...RD].sort().forEach(d=>{if(!cur.has(d)){p.dirs.push(d);cur.add(d);add++}});
+ return{add,rm}}
+async function ghPull(){const p=cP(),rp=ghSel(),br=$('#ghBr').value;if(!rp||!br)return toast('Choose a repository and branch first');
+ if(rp.empty)throw new Error(rp.full+' is empty, so there is nothing to pull yet.');
+ let bz=ghBusy('Reading '+rp.full),h,t,pl;bz.set('Reading '+br+' on GitHub…');
+ const ent=[];let tot=0,skip=0;
+ try{h=await ghHead(rp,br,bz.sig);t=await ghTree(rp,h.tree,bz.sig);skip=t.truncated?1:0;
+  t.tree.forEach(x=>{if(x.type!='blob'||x.mode=='120000')return;if(GHBIN.test(x.path)||x.size>5e5||ent.length>=400||tot+x.size>3e6)skip++;else{ent.push(x);tot+=x.size}});
+  if(!ent.length)throw new Error('No text files to pull ('+skip+' skipped).');bz.set('Comparing with this project…');pl=await ghPullPlan(p,rp,br,t,ent)}finally{bz.done()}
+ const r=await ghPullDlg(rp,br,ent.length,tot,skip,{p,pl});if(!r)return;
+ if(r.mode=='new')return ghPullNew(rp,br,h,ent,skip,r.name,t);
+ const xs=[...pl.get,...(r.theirs?pl.cf.filter(c=>c.x).map(c=>c.x):[])],dels=[...pl.del,...(r.theirs?pl.cf.filter(c=>!c.x).map(c=>c.path):[])],got=new Map();let n=0,bad=0;
+ bz=ghBusy('Updating '+p.name);
+ try{await ghPool(xs,6,async x=>{const g=await ghText(rp,x,bz.sig);if(!g)bad++;else got.set(x.path,{...g,sha:x.sha});bz.set('Downloading '+(++n)+' / '+xs.length,n/xs.length)},bz.sig)}finally{bz.done()}
+ const F={...pl.B};pl.same.forEach(x=>{const l=pl.L.get(x.path);F[x.path]=[x.sha,l&&l.crlf?1:0]});
+ got.forEach((g,path)=>{const l=pl.L.get(path);if(l){l.f.text=g.s;const d=docs[l.f.id];if(d)d.setValue(g.s)}else p.files.push({id:uid(),name:path,text:g.s});F[path]=[g.sha,g.crlf?1:0]});
+ let rm=0;dels.forEach(path=>{const l=pl.L.get(path);if(!l||p.files.length<2)return;p.files=p.files.filter(f=>f!==l.f);delete docs[l.f.id];delete F[path];rm++});
+ const dd=ghDirs(p,pl.RD,pl.Bd,t.truncated);
+ await kvPutW('gh:b:'+p.id,{f:F,c:h.commit,d:[...pl.RD]});p.gh={o:rp.o,r:rp.r,b:br};
+ try{localStorage.setItem('forge1',JSON.stringify(S))}catch(e){throw new Error('Not enough browser storage to keep these changes. Export your project, then try a smaller repository.')}
+ openFile(p.id,p.files.some(f=>f.id==S.f)?S.f:p.files[0].id);
+ toast('Updated '+p.name+': '+got.size+' file'+(got.size==1?'':'s')+' written'+(rm?', '+rm+' removed':'')+(dd.add?' · '+dd.add+' folder'+(dd.add==1?'':'s')+' added':'')+(dd.rm?' · '+dd.rm+' folder'+(dd.rm==1?'':'s')+' removed':'')+(bad+skip?' · '+(bad+skip)+' skipped':''))}
+async function ghPullNew(rp,br,h,ent,skip,name,t){const bz=ghBusy('Pulling '+rp.full),files=[],F={};let n=0,bad=0;
+ try{await ghPool(ent,6,async x=>{const g=await ghText(rp,x,bz.sig);if(!g)bad++;else{files.push({id:uid(),name:x.path,text:g.s});F[x.path]=[x.sha,g.crlf?1:0]}bz.set('Downloading '+(++n)+' / '+ent.length,n/ent.length)},bz.sig)}finally{bz.done()}
+ if(!files.length)throw new Error('Nothing could be imported as text.');
+ files.sort((a,b)=>a.name<b.name?-1:1);const pr={id:uid(),name,files,dirs:[],gh:{o:rp.o,r:rp.r,b:br}},RD=new Set(t.tree.filter(x=>x.type=='tree').map(x=>x.path)),dd=ghDirs(pr,RD,[],0);
+ await kvPutW('gh:b:'+pr.id,{f:F,c:h.commit,d:[...RD]});S.ps.push(pr);
+ try{localStorage.setItem('forge1',JSON.stringify(S))}catch(e){S.ps.pop();kvDel('gh:b:'+pr.id);throw new Error('Not enough browser storage to keep this project. Try a smaller repository.')}
+ const first=files.find(f=>/^index\.html?$/i.test(f.name))||files.find(f=>/\.html?$/i.test(f.name))||files[0];OPEN.add('P'+pr.id);openFile(pr.id,first.id);
+ toast('Pulled '+files.length+' file'+(files.length>1?'s':'')+(RD.size?' · '+RD.size+' folder'+(RD.size>1?'s':''):'')+(bad+skip?' · '+(bad+skip)+' skipped':''))}
+/* panel: sign-in, repo + branch pickers, live change summary */
+let gsq=0,gT;
+async function ghStat(){const el=$('#ghSt'),p=cP(),k=++gsq;if(!p.gh){el.textContent='This project is not linked to a repository yet. Pushing links it.';return}
+ const Bs=await kvGet('gh:b:'+p.id),B=(Bs&&Bs.f)||{},L=await ghSnap(p,B);if(k!=gsq)return;let a=0,mo=0,d=0;
+ L.forEach((l,path)=>{const b=B[path];if(!b)a++;else if(b[0]!=l.sha)mo++});for(const x in B)if(!L.has(x))d++;
+ el.textContent='Linked to '+p.gh.o+'/'+p.gh.r+' @ '+p.gh.b+(Bs&&Bs.c?' · synced '+Bs.c.slice(0,7):'')+'\n'+(Bs?(a+mo+d?mo+' modified, '+a+' added, '+d+' removed since last sync':'No local changes since last sync'):'Sync info missing. Push will compare with GitHub.')}
+function ghShow(){const on=!!GH.tok;$('#ghIn').hidden=on;$('#ghOn').hidden=!on;if(!on)return;$('#ghWho').textContent=GH.user?'Signed in as '+GH.user:'Connecting…';if(!GH.repos)ghLoad();ghStat()}
+function ghReset(forget){if(GH.ac)GH.ac.abort();if(GH.bac)GH.bac.abort();GH.tok='';GH.user='';GH.repos=null;$('#ghTok').value='';$('#ghRp').textContent='';$('#ghBr').textContent='';if(forget)kvDel(GHK);ghShow()}
+function ghFill(pref){const s=$('#ghRp'),q=$('#ghFq').value.trim().toLowerCase(),keep=s.value,lk=cP().gh,lkn=lk?lk.o+'/'+lk.r:'',L=(GH.repos||[]).filter(r=>!q||r.full.toLowerCase().includes(q));s.textContent='';
+ L.forEach(r=>s.add(new Option(r.full+(r.priv?' 🔒':'')+(r.arch?' (archived)':''),r.full)));if(!L.length)s.add(new Option(GH.repos&&GH.repos.length?'No match':'No repositories',''));
+ const has=n=>n&&L.some(r=>r.full==n),want=pref&&has(lkn)?lkn:has(keep)?keep:has(lkn)?lkn:'';if(want)s.value=want;if(s.value!==keep||!$('#ghBr').options.length)ghBr()}
+async function ghBr(){const rp=ghSel(),s=$('#ghBr');if(GH.bac)GH.bac.abort();s.textContent='';if(!rp)return;if(rp.empty){s.add(new Option(rp.def,rp.def));s.value=rp.def;return}const ac=GH.bac=new AbortController();s.add(new Option('Loading branches…',''));
+ try{let all=[];for(let pg=1;pg<=3;pg++){const b=await gh(`/repos/${rp.full}/branches?per_page=100&page=${pg}`,{signal:ac.signal});b.forEach(x=>all.push(x.name));if(b.length<100)break}
+  s.textContent='';if(!all.length&&rp.def){rp.empty=true;all=[rp.def]}all.forEach(n=>s.add(new Option(n,n)));const lk=cP().gh;s.value=lk&&lk.o==rp.o&&lk.r==rp.r&&all.includes(lk.b)?lk.b:all.includes(rp.def)?rp.def:all[0]||''}
+ catch(e){if(e.name!='AbortError'){s.textContent='';$('#ghSt').textContent=e.message}}}
+async function ghLoad(){if(GH.ac)GH.ac.abort();const ac=GH.ac=new AbortController(),sg=ac.signal,st=$('#ghSt');GH.repos=[];
+ try{if(!GH.user){GH.user=(await gh('/user',{signal:sg})).login;$('#ghWho').textContent='Signed in as '+GH.user}st.textContent='Loading repositories…';const out=[];
+  for(let pg=1;pg<=5;pg++){const a=await gh('/user/repos?per_page=100&sort=pushed&affiliation=owner,collaborator,organization_member&page='+pg,{signal:sg});
+   a.forEach(x=>out.push({full:x.full_name,o:x.owner.login,r:x.name,def:x.default_branch,push:!!(x.permissions&&x.permissions.push),priv:x.private,arch:x.archived}));if(a.length<100)break}
+  GH.repos=out;ghFill(1);ghStat()}
+ catch(e){if(e.name=='AbortError')return;GH.repos=null;if(e.status==401){ghReset(1);ghNote('GitHub sign-in failed',e.message)}else st.textContent=e.message+'  (tap ↻ to retry)'}}
+$('#ghCon').onclick=async()=>{const t=$('#ghTok').value.trim();if(!t)return toast('Paste a token first');GH.tok=t;GH.user='';GH.repos=null;$('#ghTok').value='';
+ try{await kvPutW(GHK,t)}catch(e){toast('Could not save the token to IndexedDB. It will be lost when you close the tab.')}ghShow()};
+$('#ghTok').onkeydown=e=>{if(e.key=='Enter')$('#ghCon').click()};
+$('#ghOut').onclick=async()=>{if(await sure('The token is removed from this device. Your projects are not changed.','Disconnect',1,'Disconnect GitHub?'))ghReset(1)};
+$('#ghRef').onclick=()=>{if(GH.tok){GH.repos=null;ghShow()}};
+$('#ghRp').onchange=ghBr;$('#ghBr').onchange=ghStat;{let ft;$('#ghFq').oninput=()=>{clearTimeout(ft);ft=setTimeout(ghFill,150)}}
+$('#ghPush').onclick=ghRun(ghPush);
+/* ---------- new repository: modal, create, first commit ---------- */
+/* Pushed paths are always the project's own file names, relative to the repository root. The project name is never used as a folder. */
+const ghSlug=n=>String(n).trim().replace(/[^A-Za-z0-9._-]+/g,'-').replace(/^[-.]+|-+$/g,'').slice(0,100),
+ ghB64=t=>{const b=ghEnc.encode(t);let o='';for(let i=0;i<b.length;i+=32768)o+=String.fromCharCode.apply(null,b.subarray(i,i+32768));return btoa(o)},
+ ghRetry=async(f,n=4)=>{for(let i=0;;i++){try{return await f()}catch(e){if(i>=n||!e||e.status!=404)throw e;await new Promise(r=>setTimeout(r,700*(i+1)))}}};
+function ghNewDlg(p){return new Promise(res=>{
+ const m=openMdl('<div class="mh"><b>New GitHub repository</b><button class="x" title="Close">✕</button></div><div class="mb"><p class="ghl">Repository name</p><input type="text" class="dq gnn" maxlength="100" autocomplete="off" spellcheck="false"><p class="gne"></p><p class="ghl">Description <span>(optional)</span></p><input type="text" class="dq gnd" maxlength="350" autocomplete="off" placeholder="Short description"><p class="ghl">Visibility</p><label class="gro"><input type="radio" name="gv" value="private" checked><span><b>🔒 Private</b><small>Only you and people you invite can see it.</small></span></label><label class="gro"><input type="radio" name="gv" value="public"><span><b>🌐 Public</b><small>Anyone on the internet can see it.</small></span></label><label class="gro gpu"><input type="checkbox" class="gnp" checked><span>Push this project\'s files right after creating it</span></label><p class="gnh">Only the files inside this project are pushed, at the top level of the repository. The project itself is not added as a folder.</p></div><div class="mf"><span class="sp"></span><button class="cx">Cancel</button><button class="ok">Create repository</button></div>','sm'),
+  q=s=>m.querySelector(s),nm=q('.gnn'),ok=q('.ok');let out=null;
+ m._c=()=>res(out);nm.value=ghSlug(p.name)||'my-project';
+ const chk=()=>{const v=nm.value.trim();let e='';
+  if(!v)e='Enter a name.';else if(!/^[A-Za-z0-9._-]+$/.test(v))e='Use only letters, numbers, dots, hyphens and underscores.';else if(/^\.{1,2}$/.test(v)||/\.git$/i.test(v))e='That name is not allowed.';
+  else if((GH.repos||[]).some(r=>r.full.toLowerCase()==(GH.user+'/'+v).toLowerCase()))e='You already have a repository with this name.';
+  q('.gne').textContent=e;ok.disabled=!!e};
+ nm.oninput=chk;q('.cx').onclick=()=>closeMdl(m);
+ nm.onkeydown=e=>{if(e.key=='Enter'&&!ok.disabled)ok.click()};
+ ok.onclick=()=>{out={name:nm.value.trim(),desc:q('.gnd').value.trim(),priv:q('input[name=gv]:checked').value=='private',push:q('.gnp').checked};closeMdl(m,1)};
+ chk();setTimeout(()=>{nm.focus();nm.select()},40)})}
+async function ghNewRepo(){const p=cP();
+ if(!GH.repos)return toast('Repositories are still loading. Try again in a moment.');
+ if(!p.files.length)throw new Error('This project has no files yet, so there is nothing to put in a repository.');
+ const r=await ghNewDlg(p);if(!r)return;
+ if(!r.priv&&!await sure('Anyone on the internet will be able to see the files you push. Check the project for tokens, keys and passwords first.','Create public',1,'Create a public repository?'))return;
+ const z=ghBusy('Creating '+r.name);let x;
+ try{z.set('Creating '+(r.priv?'private':'public')+' repository…');z.lock();
+  x=await gh('/user/repos',{method:'POST',body:{name:r.name,description:r.desc||undefined,private:r.priv,auto_init:false}})}
+ catch(e){if(e&&e.status==422)throw new Error('GitHub could not create "'+r.name+'". A repository with that name probably already exists on your account.');
+  if(e&&(e.status==403||e.status==404)&&!/rate limit/i.test(e.message))throw new Error('This token is not allowed to create repositories. Fine-grained tokens need Administration: read & write on all repositories. Classic tokens need the repo scope.');throw e}
+ finally{z.done()}
+ const rp={full:x.full_name,o:x.owner.login,r:x.name,def:x.default_branch||'main',push:true,priv:x.private,arch:false,empty:true};
+ GH.repos=GH.repos.filter(a=>a.full!=rp.full);GH.repos.unshift(rp);
+ $('#ghFq').value='';ghFill();$('#ghRp').value=rp.full;await ghBr();ghStat();
+ toast('Created '+rp.full+(rp.priv?' (private)':' (public)'));
+ if(r.push)await ghPush('Initial commit')}
+/* first commit into an empty repo: the git data API refuses empty repos, so one file goes in through the contents API,
+   then a single root commit holding exactly the project's files replaces it. */
+async function ghPushFirst(p,rp,br,pl,r){
+ const z=ghBusy('Pushing to '+rp.full),sg=z.sig,api=`/repos/${rp.full}/git`,up=r.ch.filter(c=>c.st!='D'),msg=r.msg+(r.desc?'\n\n'+r.desc:'');let sha,n=0;
+ try{z.set('Creating first commit…');const f=up.find(c=>c.l.f.text)||up[0];
+  try{sha=(await ghRetry(()=>gh(`/repos/${rp.full}/contents/${ghBp(f.path)}`,{method:'PUT',body:{message:msg,content:ghB64(ghSer(f.l))},signal:sg}))).commit.sha}
+  catch(e){if(e&&e.status==404)throw new Error('GitHub has '+rp.full+' but this token cannot write to it. If the token is limited to selected repositories, add this one in your GitHub token settings, then press Push.');throw e}
+  rp.empty=false;z.lock();
+  if(up.length>1){const tree=[];z.set('Uploading 0 / '+up.length,0);
+   await ghPool(up,4,async c=>{const b=await gh(api+'/blobs',{method:'POST',body:{content:ghSer(c.l),encoding:'utf-8'},signal:sg});tree.push({path:c.path,mode:'100644',type:'blob',sha:b.sha});z.set('Uploading '+(++n)+' / '+up.length,n/up.length)},sg);
+   z.set('Creating commit…');const t=await gh(api+'/trees',{method:'POST',body:{tree},signal:sg}),c2=await gh(api+'/commits',{method:'POST',body:{message:msg,tree:t.sha,parents:[]},signal:sg});
+   z.set('Updating '+br+'…');await gh(api+'/refs/heads/'+ghBp(br),{method:'PATCH',body:{sha:c2.sha,force:true}});sha=c2.sha}
+  await ghMark(p,rp,br,pl,new Set(up.map(c=>c.path)),sha);toast('Pushed '+up.length+' file'+(up.length>1?'s':'')+' to '+rp.full)}
+ finally{z.done()}}
+$('#ghNew').onclick=ghRun(ghNewRepo);
+$('#ghPull').onclick=ghRun(ghPull);
+TABS.push(['gh','GitHub']);{const b=document.createElement('button');b.id='t-gh';b.textContent='GitHub';b.onclick=()=>tab('gh');$('#tabs').insertBefore(b,$('#t-files'))}
+{const t0=tab;tab=function(n){t0(n);if(n=='gh')ghShow()}}
+{const o2=openFile;openFile=function(...a){o2(...a);if($('#p-gh').classList.contains('on')){if(GH.repos)ghFill(1);ghStat()}}}
+{const d0=delProj;delProj=async function(p){await d0(p);if(!S.ps.includes(p))kvDel('gh:b:'+p.id)}}
+cm.on('change',()=>{if($('#p-gh').classList.contains('on')){clearTimeout(gT);gT=setTimeout(ghStat,900)}});
+/* startup: restore a remembered token (no network until the tab opens) and drop sync data of deleted projects */
+(async()=>{const t=await kvGet(GHK);if(typeof t=='string'&&t)GH.tok=t;const db=await DB;if(!db)return;const ids=new Set(S.ps.map(p=>'gh:b:'+p.id));
+ try{const st=db.transaction('kv','readwrite').objectStore('kv');st.openKeyCursor().onsuccess=e=>{const c=e.target.result;if(c){const k=String(c.key);if(k.startsWith('gh:b:')&&!ids.has(k))st.delete(c.key);c.continue()}}}catch(e){}})();
+/* ---------- boot ---------- */
+(async()=>{await wipeModels();const u=(await kvGet('ui'))||{};
+ if(u.open)u.open.forEach(k=>OPEN.add(k));
+ if(u.fs)fs(u.fs-FS);if(u.wrap)cm.setOption('lineWrapping',true);
+ document.body.classList.toggle('kb',u.kb!=null?u.kb:matchMedia('(max-width:820px),(pointer:coarse)').matches);
+ if(u.hide&&innerWidth>820)document.body.classList.add('hide');
+ addEventListener('pagehide',()=>{flush();persist();saveNow()});
+ S.p=cP().id;S.f=cF().id;tab(TABS.some(t=>t[0]==u.tab)?u.tab:'tree');openFile(S.p,S.f);setTimeout(()=>introShow(),350)})();
+</script>
+</body>
+</html>
